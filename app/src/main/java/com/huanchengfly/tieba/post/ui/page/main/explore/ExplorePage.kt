@@ -1,9 +1,19 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.MaterialTheme
@@ -14,11 +24,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,9 +63,12 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.TabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.accountNavIconIfCompact
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
+import com.huanchengfly.tieba.post.utils.compose.calcStatusBarColor
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
+import kotlin.math.max
+import kotlin.math.min
 
 
 @Immutable
@@ -113,6 +137,7 @@ private fun TabText(
 fun ExplorePage() {
     val account = LocalAccount.current
     val navigator = LocalNavigator.current
+    val density = LocalDensity.current
 
     val loggedIn = remember(account) { account != null }
 
@@ -144,22 +169,91 @@ fun ExplorePage() {
         coroutineScope.emitGlobalEvent(GlobalEvent.Refresh(pages[pagerState.currentPage].id))
     }
 
+    var heightOffset by rememberSaveable { mutableFloatStateOf(0f) }
+    var titleBarHeight by rememberSaveable {
+        mutableFloatStateOf(with(density) { 56.dp.toPx() })
+    }
+
+    val headerNestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (available.y < 0) {
+                    val prevHeightOffset = heightOffset
+                    heightOffset = max(heightOffset + available.y, -titleBarHeight)
+                    if (prevHeightOffset != heightOffset) {
+                        return available.copy(x = 0f)
+                    }
+                }
+
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (available.y > 0f) {
+                    val prevHeightOffset = heightOffset
+                    heightOffset = min(heightOffset + available.y, 0f)
+                    if (prevHeightOffset != heightOffset) {
+                        return available.copy(x = 0f)
+                    }
+                }
+
+                return Offset.Zero
+            }
+        }
+    }
+
     Scaffold(
         backgroundColor = Color.Transparent,
         topBar = {
-            Toolbar(
-                title = stringResource(id = R.string.title_explore),
-                navigationIcon = accountNavIconIfCompact(),
-                actions = {
-                    ActionItem(
-                        icon = Icons.Rounded.Search,
-                        contentDescription = stringResource(id = R.string.title_search)
+            Column {
+                Spacer(
+                    modifier = Modifier
+                        .windowInsetsTopHeight(WindowInsets.statusBars)
+                        .fillMaxWidth()
+                        .background(color = ExtendedTheme.colors.topBar.calcStatusBarColor())
+                )
+                Box(
+                    modifier = Modifier
+                        .height(with(density) { (titleBarHeight + heightOffset).toDp() })
+                        .clipToBounds()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .wrapContentHeight(
+                                align = Alignment.Bottom,
+                                unbounded = true
+                            )
+                            .onSizeChanged { titleBarHeight = it.height.toFloat() }
                     ) {
-                        navigator.navigate(SearchPageDestination)
+                        Toolbar(
+                            title = stringResource(id = R.string.title_explore),
+                            insets = false,
+                            navigationIcon = accountNavIconIfCompact(),
+                            actions = {
+                                ActionItem(
+                                    icon = Icons.Rounded.Search,
+                                    contentDescription = stringResource(id = R.string.title_search)
+                                ) {
+                                    navigator.navigate(SearchPageDestination)
+                                }
+                            },
+                        )
                     }
-                },
-            ) {
-                ExplorePageTab(pagerState = pagerState, pages = pages)
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(color = ExtendedTheme.colors.topBar),
+                ) {
+                    ExplorePageTab(pagerState = pagerState, pages = pages)
+                }
             }
         },
         modifier = Modifier.fillMaxSize(),
@@ -168,7 +262,9 @@ fun ExplorePage() {
             contentPadding = paddingValues,
             state = pagerState,
             key = { pages[it].id },
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(headerNestedScrollConnection),
             verticalAlignment = Alignment.Top,
             userScrollEnabled = true,
         ) {

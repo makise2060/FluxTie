@@ -1,14 +1,8 @@
-# <p align="center">Tieba Lite</p>
-<p align="center">
-    <a href="https://github.com/HuanCheng65/TiebaLite/actions/workflows/build.yml">
-        <img alt="Build Status" src="https://github.com/HuanCheng65/TiebaLite/actions/workflows/build.yml/badge.svg?branch=4.0-dev">
-    </a>
-    <a href="https://t.me/tblite_discuss">
-        <img alt="Status" src="https://img.shields.io/badge/-Telegram-blue?logo=telegram&style=flat">
-    </a>
-</p>
+# <p align="center">FluxTie</p>
 
-贴吧 Lite 是一个**非官方**的贴吧客户端。
+FluxTie 是一个**非官方**的贴吧客户端。
+
+本项目 Fork 自 [makise2060/FluxTie](https://github.com/makise2060/FluxTie)，原始项目为 [HuanCheng65/TiebaLite](https://github.com/HuanCheng65/TiebaLite)，感谢原作者及所有贡献者。
 
 ## 说明
 

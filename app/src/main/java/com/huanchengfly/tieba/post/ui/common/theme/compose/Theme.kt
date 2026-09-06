@@ -15,14 +15,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.core.graphics.toColorInt
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.compose.darken
+import com.materialkolor.PaletteStyle
+import com.materialkolor.dynamicColorScheme
 
 @Stable
 data class ExtendedColors(
@@ -448,6 +453,71 @@ private fun getThemeColorForTheme(theme: String): ExtendedColors {
     )
 }
 
+/**
+ * MD3 种子配色：从种子色 + DynamicSchemeVariant（高保真/内容/鲜明等）生成完整配色。
+ */
+private fun getSeedColor(
+    seedHex: String,
+    variantName: String,
+    isDark: Boolean,
+    isAmoled: Boolean,
+    toolbarPrimaryColor: Boolean,
+): ExtendedColors {
+    val seedColor = runCatching {
+        // 兼容 0xAARRGGBB 与 #RRGGBB 两种存储格式
+        Color(
+            if (seedHex.startsWith("0x", ignoreCase = true)) {
+                seedHex.substring(2).toLong(16).toInt()
+            } else {
+                seedHex.toColorInt()
+            }
+        )
+    }.getOrDefault(Color(0xFF2C7BF2))
+    val scheme = dynamicColorScheme(
+        seedColor = seedColor,
+        isDark = isDark,
+        isAmoled = isAmoled && isDark,
+        style = runCatching { PaletteStyle.valueOf(variantName) }
+            .getOrDefault(PaletteStyle.TonalSpot),
+    )
+    val onSurfaceSecondary = scheme.onSurfaceVariant
+    return ExtendedColors(
+        theme = ThemeUtil.THEME_CUSTOM,
+        isNightMode = isDark,
+        primary = scheme.primary,
+        onPrimary = scheme.onPrimary,
+        accent = scheme.tertiary,
+        onAccent = scheme.onTertiary,
+        topBar = if (toolbarPrimaryColor) scheme.primary else scheme.background,
+        onTopBar = if (toolbarPrimaryColor) scheme.onPrimary else scheme.onBackground,
+        onTopBarSecondary = if (toolbarPrimaryColor) {
+            scheme.onPrimary.copy(alpha = 0.8f)
+        } else {
+            scheme.onBackground.copy(alpha = 0.6f)
+        },
+        onTopBarActive = if (toolbarPrimaryColor) scheme.onPrimary else scheme.primary,
+        topBarSurface = if (toolbarPrimaryColor) scheme.primaryContainer else scheme.surfaceContainerHigh,
+        onTopBarSurface = if (toolbarPrimaryColor) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+        bottomBar = scheme.surface,
+        bottomBarSurface = scheme.surfaceContainer,
+        onBottomBarSurface = scheme.onSurface,
+        text = scheme.onBackground,
+        textSecondary = onSurfaceSecondary,
+        textDisabled = scheme.outline,
+        background = scheme.background,
+        chip = scheme.surfaceContainerHigh,
+        onChip = scheme.onSurfaceVariant,
+        unselected = scheme.onSurfaceVariant.copy(alpha = 0.6f),
+        card = scheme.surfaceContainerLow,
+        floorCard = scheme.surfaceContainer,
+        divider = scheme.outlineVariant,
+        shadow = Color.Black.copy(alpha = if (isDark) 0.4f else 0.15f),
+        indicator = scheme.primary,
+        windowBackground = scheme.background,
+        placeholder = scheme.outlineVariant,
+    )
+}
+
 @Composable
 fun TiebaLiteTheme(
     content: @Composable () -> Unit
@@ -467,10 +537,30 @@ fun TiebaLiteTheme(
 
     val useDynamicTheme = isDynamicTheme && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-    val extendedColors = if (!useDynamicTheme || ThemeUtil.isTranslucentTheme(theme)) {
-        getThemeColorForTheme(theme)
-    } else {
-        getDynamicColor(theme, dynamicTonalPalette(context))
+    val useSeedTheme by rememberPreferenceAsState(
+        key = booleanPreferencesKey("use_seed_theme"),
+        defaultValue = false
+    )
+    val seedVariant by rememberPreferenceAsState(
+        key = stringPreferencesKey("theme_scheme_variant"),
+        defaultValue = "TONAL_SPOT"
+    )
+    val seedColorPref by rememberPreferenceAsState(
+        key = stringPreferencesKey("custom_primary_color"),
+        defaultValue = "#FF2C7BF2"
+    )
+
+    val extendedColors = when {
+        ThemeUtil.isTranslucentTheme(theme) -> getThemeColorForTheme(theme)
+        useSeedTheme -> getSeedColor(
+            seedHex = seedColorPref,
+            variantName = seedVariant,
+            isDark = ThemeUtil.isNightMode(theme),
+            isAmoled = theme == ThemeUtil.THEME_AMOLED_DARK,
+            toolbarPrimaryColor = context.appPreferences.toolbarPrimaryColor,
+        )
+        useDynamicTheme -> getDynamicColor(theme, dynamicTonalPalette(context))
+        else -> getThemeColorForTheme(theme)
     }
 
     val colors = getColorPalette(isDarkColorPalette, extendedColors)

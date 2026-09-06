@@ -274,17 +274,20 @@ class App : Application(), SketchFactory {
                         } else {
                             dynamicTonalPalette.primary40.toArgb()
                         }
-                    } else if (ThemeUtil.THEME_CUSTOM == theme) {
-                        val customPrimaryColorStr = context.appPreferences.customPrimaryColor
-                        return if (customPrimaryColorStr != null) {
-                            Color.parseColor(customPrimaryColorStr)
-                        } else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
-                    } else if (ThemeUtil.isTranslucentTheme(theme)) {
-                        val primaryColorStr = context.appPreferences.translucentPrimaryColor
-                        return if (primaryColorStr != null) {
-                            Color.parseColor(primaryColorStr)
-                        } else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
-                    }
+                } else if (ThemeUtil.THEME_CUSTOM == theme) {
+                    val customPrimaryColorStr = context.appPreferences.customPrimaryColor
+                    return if (customPrimaryColorStr != null) {
+                        // AGP 时代遗留数据可能是任意格式，解析失败回退默认主题色而不是崩溃
+                        runCatching { Color.parseColor(customPrimaryColorStr) }
+                            .getOrElse { getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT) }
+                    } else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
+                } else if (ThemeUtil.isTranslucentTheme(theme)) {
+                    val primaryColorStr = context.appPreferences.translucentPrimaryColor
+                    return if (primaryColorStr != null) {
+                        runCatching { Color.parseColor(primaryColorStr) }
+                            .getOrElse { getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT) }
+                    } else getColorByAttr(context, attrId, ThemeUtil.THEME_DEFAULT)
+                }
                     return context.getColorCompat(
                         resources.getIdentifier(
                             "theme_color_primary_$theme",

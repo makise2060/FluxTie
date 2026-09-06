@@ -4,11 +4,12 @@ import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,9 +66,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.AppFontSizeActivity
@@ -83,9 +84,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
-import com.huanchengfly.tieba.post.utils.AppIconUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
-import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -117,20 +116,6 @@ fun CustomSettingsPage(
     navigator: DestinationsNavigator,
 ) {
     val context = LocalContext.current
-    val themeValues = arrayOf(
-        ThemeUtil.THEME_DEFAULT,
-        ThemeUtil.THEME_BLUE,
-        ThemeUtil.THEME_PINK,
-        ThemeUtil.THEME_RED,
-        ThemeUtil.THEME_PURPLE,
-    )
-    val themeLabels = listOf(
-        stringResource(id = R.string.title_theme_color_default),
-        stringResource(id = R.string.title_theme_color_blue),
-        stringResource(id = R.string.title_theme_color_pink),
-        stringResource(id = R.string.title_theme_color_red),
-        stringResource(id = R.string.title_theme_color_purple),
-    )
     val darkStyleNames = mapOf(
         ThemeUtil.THEME_GREY_DARK to stringResource(id = R.string.title_dark_style_grey),
         ThemeUtil.THEME_AMOLED_DARK to stringResource(id = R.string.title_dark_style_amoled),
@@ -144,9 +129,17 @@ fun CustomSettingsPage(
         key = stringPreferencesKey(ThemeUtil.KEY_DARK_THEME),
         defaultValue = ThemeUtil.THEME_AMOLED_DARK
     )
-    var appIcon by rememberPreferenceAsMutableState(
-        key = stringPreferencesKey("app_icon"),
-        defaultValue = LauncherIcons.NEW_ICON
+    var schemeVariant by rememberPreferenceAsMutableState(
+        key = stringPreferencesKey("theme_scheme_variant"),
+        defaultValue = "TONAL_SPOT"
+    )
+    var useSeedTheme by rememberPreferenceAsMutableState(
+        key = booleanPreferencesKey("use_seed_theme"),
+        defaultValue = false
+    )
+    var seedColorPref by rememberPreferenceAsMutableState(
+        key = stringPreferencesKey("custom_primary_color"),
+        defaultValue = "#FF2C7BF2"
     )
     val appIconDialogState = rememberDialogState()
     val customPrimaryColorDialogState = rememberDialogState()
@@ -168,32 +161,56 @@ fun CustomSettingsPage(
         defaultValue = ThemeUtil.THEME_DEFAULT
     )
     val lightPreviewTheme = if (currentIsNight) oldTheme else currentTheme
+    val hapticFeedback = LocalHapticFeedback.current
     val customLabel = stringResource(id = R.string.title_theme_custom)
+    val schemeStyleLabel = stringResource(id = R.string.title_scheme_style)
+    val variantTonalSpot = stringResource(id = R.string.scheme_tonal_spot)
+    val variantNeutral = stringResource(id = R.string.scheme_neutral)
+    val variantVibrant = stringResource(id = R.string.scheme_vibrant)
+    val variantExpressive = stringResource(id = R.string.scheme_expressive)
+    val variantFidelity = stringResource(id = R.string.scheme_fidelity)
+    val variantContent = stringResource(id = R.string.scheme_content)
+    val variantMonochrome = stringResource(id = R.string.scheme_monochrome)
+    val variantRainbow = stringResource(id = R.string.scheme_rainbow)
+    val variantFruitSalad = stringResource(id = R.string.scheme_fruit_salad)
+    val seedBlue = stringResource(id = R.string.seed_blue)
+    val seedTeal = stringResource(id = R.string.seed_teal)
+    val seedSakura = stringResource(id = R.string.seed_sakura)
+    val seedSpring = stringResource(id = R.string.seed_spring)
+    val seedAutumn = stringResource(id = R.string.seed_autumn)
+    val seedPurple = stringResource(id = R.string.seed_purple)
+    val seedOrange = stringResource(id = R.string.seed_orange)
+    val seedPink = stringResource(id = R.string.seed_pink)
+    val seedRed = stringResource(id = R.string.seed_red)
+    val seedIndigo = stringResource(id = R.string.seed_indigo)
 
-    val allSwatches = arrayOf(
-        ThemeUtil.THEME_DEFAULT,
-        ThemeUtil.THEME_BLUE,
-        ThemeUtil.THEME_PINK,
-        ThemeUtil.THEME_RED,
-        ThemeUtil.THEME_PURPLE,
-    ).mapIndexed { index, themeId ->
-        ThemeSwatch(
-            id = themeId,
-            name = themeLabels[index],
-            fill = Color(
-                App.ThemeDelegate.getColorByAttr(context, R.attr.colorNewPrimary, themeId)
-            ),
-            dotColor = Color(
-                App.ThemeDelegate.getColorByAttr(context, R.attr.colorAccent, themeId)
-            ),
-            stripeColor = Color(
-                App.ThemeDelegate.getColorByAttr(context, R.attr.colorBackground, themeId)
-            ),
-        )
-    } + ThemeSwatch(
-        "custom", customLabel, customPrimaryColor, ExtendedTheme.colors.accent, ExtendedTheme.colors.background
+    val schemeVariants = listOf(
+        "TONAL_SPOT", "NEUTRAL", "VIBRANT", "EXPRESSIVE", "FIDELITY",
+        "CONTENT", "MONOCHROME", "RAINBOW", "FRUIT_SALAD",
     )
-    val swatchRows = allSwatches.chunked(3)
+    val variantLabels = mapOf(
+        "TONAL_SPOT" to variantTonalSpot,
+        "NEUTRAL" to variantNeutral,
+        "VIBRANT" to variantVibrant,
+        "EXPRESSIVE" to variantExpressive,
+        "FIDELITY" to variantFidelity,
+        "CONTENT" to variantContent,
+        "MONOCHROME" to variantMonochrome,
+        "RAINBOW" to variantRainbow,
+        "FRUIT_SALAD" to variantFruitSalad,
+    )
+    val seedPresets = listOf(
+        ThemeSwatch("0xFF2C7BF2", seedBlue, Color(0xFF2C7BF2), Color(0xFF2C7BF2), Color.White),
+        ThemeSwatch("0xFF00897B", seedTeal, Color(0xFF00897B), Color(0xFF00897B), Color.White),
+        ThemeSwatch("0xFF8E4955", seedSakura, Color(0xFF8E4955), Color(0xFF8E4955), Color.White),
+        ThemeSwatch("0xFF4C662B", seedSpring, Color(0xFF4C662B), Color(0xFF4C662B), Color.White),
+        ThemeSwatch("0xFF735C0C", seedAutumn, Color(0xFF735C0C), Color(0xFF735C0C), Color.White),
+        ThemeSwatch("0xFF6750A4", seedPurple, Color(0xFF6750A4), Color(0xFF6750A4), Color.White),
+        ThemeSwatch("0xFFEF6C00", seedOrange, Color(0xFFEF6C00), Color(0xFFEF6C00), Color.White),
+        ThemeSwatch("0xFFD81B60", seedPink, Color(0xFFD81B60), Color(0xFFD81B60), Color.White),
+        ThemeSwatch("0xFFC62828", seedRed, Color(0xFFC62828), Color(0xFFC62828), Color.White),
+        ThemeSwatch("0xFF3F51B5", seedIndigo, Color(0xFF3F51B5), Color(0xFF3F51B5), Color.White),
+    )
 
     // 自定义主色弹窗
     Dialog(
@@ -215,6 +232,7 @@ fun CustomSettingsPage(
             androidx.compose.material.TextButton(onClick = {
                 context.appPreferences.customPrimaryColor =
                     CustomThemeDialog.toString(customPrimaryColor.toArgb())
+                useSeedTheme = true
                 ThemeUtil.setUseDynamicTheme(false)
                 ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
                 customPrimaryColorDialogState.show = false
@@ -257,70 +275,6 @@ fun CustomSettingsPage(
                                 onClick = { customPrimaryColor = preset }
                             )
                     )
-                }
-            }
-        }
-    }
-
-    // 应用图标选择弹窗
-    Dialog(
-        dialogState = appIconDialogState,
-        title = { Text(text = stringResource(id = R.string.settings_app_icon)) },
-        buttons = {
-            androidx.compose.material.TextButton(onClick = { appIconDialogState.show = false }) {
-                Text(text = stringResource(id = R.string.button_cancel))
-            }
-        }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            val iconOptions = listOf(
-                Triple(LauncherIcons.NEW_ICON, "新图标", R.drawable.ic_launcher_new_round),
-                Triple(LauncherIcons.NEW_ICON_INVERT, "新图标（反色）", R.drawable.ic_launcher_new_invert_round),
-                Triple(LauncherIcons.OLD_ICON, "旧图标", R.drawable.ic_launcher_round),
-            )
-            iconOptions.forEachIndexed { index, (value, name, drawableRes) ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {
-                                appIcon = value
-                                AppIconUtil.setIcon(icon = value)
-                                appIconDialogState.show = false
-                            }
-                        )
-                        .padding(12.dp)
-                ) {
-                    Image(
-                        painter = rememberDrawablePainter(
-                            drawable = context.getDrawable(drawableRes)
-                        ),
-                        contentDescription = name,
-                        modifier = Modifier.size(36.dp)
-                    )
-                    Text(
-                        text = name,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (appIcon == value) {
-                        Icon(
-                            imageVector = Icons.Rounded.Check,
-                            contentDescription = stringResource(id = R.string.desc_checked),
-                            tint = ExtendedTheme.colors.primary
-                        )
-                    }
-                }
-                if (index != iconOptions.lastIndex) {
-                    CardDivider()
                 }
             }
         }
@@ -422,12 +376,64 @@ fun CustomSettingsPage(
                 }
             }
 
-            // ── 主题色彩
+            // ── 配色风格（MD3 DynamicSchemeVariant）
+            item {
+                SectionLabel(text = schemeStyleLabel)
+            }
+            item {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 5.dp)
+                ) {
+                    schemeVariants.forEach { variantId ->
+                        val selected = schemeVariant == variantId
+                        Text(
+                            text = variantLabels[variantId] ?: variantId,
+                            fontSize = 13.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selected) ExtendedTheme.colors.onPrimary else ExtendedTheme.colors.text,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    color = if (selected) {
+                                        ExtendedTheme.colors.primary
+                                    } else {
+                                        ExtendedTheme.colors.card
+                                    }
+                                )
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        schemeVariant = variantId
+                                        if (useSeedTheme && currentTheme != ThemeUtil.THEME_CUSTOM) {
+                                            ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
+                                        }
+                                    }
+                                )
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            // ── 主题色彩（MD3 种子色）
             item {
                 SectionLabel(text = stringResource(id = R.string.title_theme_color))
             }
-            items(swatchRows.size) { rowIndex ->
-                val row = swatchRows[rowIndex]
+            val seedRows = (seedPresets + ThemeSwatch(
+                "custom",
+                customLabel,
+                Color(runCatching { seedColorPref.toColorInt() }.getOrDefault(0xFF2C7BF2.toInt())),
+                Color.Transparent,
+                Color.Transparent
+            )).chunked(3)
+            items(seedRows.size) { rowIndex ->
+                val row = seedRows[rowIndex]
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
@@ -435,16 +441,20 @@ fun CustomSettingsPage(
                         .padding(horizontal = 16.dp, vertical = 5.dp)
                 ) {
                     row.forEach { swatch ->
+                        val selected = useSeedTheme && swatch.id != "custom" &&
+                                seedColorPref == swatch.id
                         ColorSwatchCard(
                             swatch = swatch,
-                            selected = currentTheme == swatch.id,
+                            selected = selected,
                             modifier = Modifier.weight(1f),
                             onClick = {
                                 if (swatch.id == "custom") {
                                     customPrimaryColorDialogState.show()
                                 } else {
-                                    ThemeUtil.switchTheme(swatch.id)
+                                    seedColorPref = swatch.id
+                                    useSeedTheme = true
                                     ThemeUtil.setUseDynamicTheme(false)
+                                    ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
                                 }
                             }
                         )
@@ -458,97 +468,6 @@ fun CustomSettingsPage(
             // ── 通用
             item {
                 SectionLabel(text = stringResource(id = R.string.title_theme_more))
-            }
-            item {
-                AppearanceCard {
-                    SwitchSettingRow(
-                        icon = Icons.Rounded.PhotoSizeSelectActual,
-                        title = stringResource(id = R.string.title_settings_status_bar_darker),
-                        summary = stringResource(id = R.string.summary_settings_status_bar_darker),
-                        key = "status_bar_darker",
-                        defaultValue = true,
-                    )
-                    CardDivider()
-                    SwitchSettingRow(
-                        icon = Icons.Rounded.FormatColorFill,
-                        title = stringResource(id = R.string.tip_toolbar_primary_color),
-                        summary = stringResource(id = R.string.tip_toolbar_primary_color_summary),
-                        key = "custom_toolbar_primary_color",
-                        defaultValue = false,
-                    )
-                    CardDivider()
-                    SwitchSettingRow(
-                        icon = Icons.Rounded.ViewAgenda,
-                        title = stringResource(id = R.string.settings_forum_single),
-                        key = "listSingle",
-                        defaultValue = false,
-                    )
-                    CardDivider()
-                    SwitchSettingRow(
-                        icon = Icons.Rounded.Explore,
-                        title = stringResource(id = R.string.title_hide_explore),
-                        key = "hideExplore",
-                        defaultValue = false,
-                    )
-                    CardDivider()
-                    SwitchSettingRow(
-                        icon = Icons.Rounded.Dock,
-                        title = stringResource(id = R.string.title_floating_bottom_nav),
-                        summary = stringResource(id = R.string.summary_floating_bottom_nav),
-                        key = "floatingBottomNav",
-                        defaultValue = true,
-                    )
-                    CardDivider()
-                    SwitchSettingRow(
-                        icon = Icons.Rounded.Upcoming,
-                        title = stringResource(id = R.string.title_lift_up_bottom_bar),
-                        summary = stringResource(id = R.string.summary_lift_up_bottom_bar),
-                        key = "liftUpBottomBar",
-                        defaultValue = true,
-                    )
-                }
-            }
-
-            // ── 应用图标
-            item {
-                SectionLabel(text = stringResource(id = R.string.settings_app_icon))
-            }
-            item {
-                AppearanceCard {
-                    SettingRow(
-                        icon = Icons.Outlined.Apps,
-                        title = stringResource(id = R.string.settings_app_icon),
-                        onClick = { appIconDialogState.show() },
-                        trailing = {
-                            Text(
-                                text = when (appIcon) {
-                                    LauncherIcons.NEW_ICON -> "新图标"
-                                    LauncherIcons.NEW_ICON_INVERT -> "新图标（反色）"
-                                    LauncherIcons.OLD_ICON -> "旧图标"
-                                    else -> ""
-                                },
-                                color = ExtendedTheme.colors.textSecondary
-                            )
-                        }
-                    )
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        CardDivider()
-                        val currentIcon by rememberPreferenceAsState(
-                            key = stringPreferencesKey("app_icon"),
-                            defaultValue = LauncherIcons.NEW_ICON
-                        )
-                        SwitchSettingRow(
-                            icon = Icons.Outlined.ColorLens,
-                            title = stringResource(id = R.string.title_settings_use_themed_icon),
-                            summary = stringResource(id = R.string.tip_settings_use_themed_icon_summary_not_supported)
-                                .takeIf { currentIcon != LauncherIcons.NEW_ICON },
-                            key = "useThemedIcon",
-                            defaultValue = false,
-                            enabled = currentIcon == LauncherIcons.NEW_ICON,
-                            onCheckedChange = { AppIconUtil.setIcon(isThemed = it) },
-                        )
-                    }
-                }
             }
 
             // ── 字体

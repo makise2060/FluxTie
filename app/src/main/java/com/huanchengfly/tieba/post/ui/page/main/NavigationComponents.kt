@@ -578,6 +578,8 @@ private fun NavPill(
             Text(
                 text = title,
                 maxLines = 1,
+                fontSize = 12.sp,
+                color = if (selected) selectedColor else unselectedColor,
                 modifier = Modifier
                     .alpha((progress * progress * progress).coerceIn(0f, 1f))
                     .layout { measurable, _ ->

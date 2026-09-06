@@ -1,4 +1,3 @@
-import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -17,7 +16,6 @@ val keystoreProperties = Properties().apply {
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose.compiler)
     //alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.kotlin.serialization)
@@ -62,12 +60,12 @@ kotlin {
 
 android {
     buildToolsVersion = "36.0.0"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
-        applicationId = "com.huanchengfly.tieba.post"
+        applicationId = "com.makise.fluxtie"
         minSdk = 23
         //noinspection OldTargetApi
-        targetSdk = 36
+        targetSdk = 37
         versionCode = applicationVersionCode
         versionName = applicationVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -130,7 +128,7 @@ android {
         metricsDestination.set(layout.buildDirectory.dir("compose_metrics"))
         reportsDestination.set(layout.buildDirectory.dir("compose_metrics"))
 
-        stabilityConfigurationFile.set(rootProject.layout.projectDirectory.file("compose_stability_configuration.txt").asFile)
+        stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("compose_stability_configuration.txt"))
     }
     packaging {
         resources {
@@ -139,15 +137,6 @@ android {
         }
     }
     namespace = "com.huanchengfly.tieba.post"
-    applicationVariants.configureEach {
-        val variant = this
-        outputs.configureEach {
-            val fileName =
-                "${variant.buildType.name}-${applicationVersionName}(${applicationVersionCode}).apk"
-
-            (this as BaseVariantOutputImpl).outputFileName = fileName
-        }
-    }
 }
 
 dependencies {
@@ -162,6 +151,8 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.material.kolor)
+    implementation("androidx.compose.material3:material3")
 
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)

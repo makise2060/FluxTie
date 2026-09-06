@@ -274,9 +274,9 @@ fun MainPage(
             GlobalEvent.Refresh(key = navigationItems[it].id)
         )
     }
-    val liftUpBottomBar by rememberPreferenceAsState(
-        key = booleanPreferencesKey("liftUpBottomBar"),
-        defaultValue = LocalContext.current.appPreferences.liftUpBottomBar
+    val floatingBottomNav by rememberPreferenceAsState(
+        key = booleanPreferencesKey("floatingBottomNav"),
+        defaultValue = LocalContext.current.appPreferences.floatingBottomNav
     )
     val saveableStateHolder = rememberSaveableStateHolder()
     ProvideNavigator(navigator = navigator) {
@@ -293,7 +293,7 @@ fun MainPage(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
                     AnimatedVisibility(visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION) {
-                        if (liftUpBottomBar) {
+                        if (floatingBottomNav) {
                             FloatingBottomNav(
                                 currentPosition = currentPosition,
                                 onChangePosition = onChangePosition,

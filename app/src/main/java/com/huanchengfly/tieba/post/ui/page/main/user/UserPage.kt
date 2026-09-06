@@ -52,7 +52,6 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.AboutPageDestination
-import com.huanchengfly.tieba.post.ui.page.destinations.AppThemePageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.FollowListPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.HistoryPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SettingsPageDestination
@@ -60,16 +59,12 @@ import com.huanchengfly.tieba.post.ui.page.destinations.ThreadStorePageDestinati
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.WebViewPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
-import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.ListMenuItem
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
-import com.huanchengfly.tieba.post.ui.widgets.compose.Switch
 import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
-import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.appPreferences
 
 @Composable
@@ -256,20 +251,6 @@ fun UserPage(
         initial = null
     )
 
-    val switchToNightDialogState = rememberDialogState()
-    ConfirmDialog(
-        dialogState = switchToNightDialogState,
-        onConfirm = {},
-        onCancel = {
-            context.appPreferences.followSystemNight = false
-            ThemeUtil.switchNightMode()
-        },
-        confirmText = stringResource(id = R.string.btn_keep_following),
-        cancelText = stringResource(id = R.string.btn_close_following)
-    ) {
-        Text(text = stringResource(id = R.string.message_dialog_follow_system_night))
-    }
-
     Scaffold(
         backgroundColor = Color.Transparent,
         modifier = Modifier
@@ -350,30 +331,6 @@ fun UserPage(
                         navigator.navigate(HistoryPageDestination)
                     }
                 )
-                ListMenuItem(
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_brush_24),
-                    text = stringResource(id = R.string.title_theme),
-                    onClick = {
-                        navigator.navigate(AppThemePageDestination)
-                    }
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.my_info_night),
-                        color = ExtendedTheme.colors.textSecondary,
-                        fontSize = 12.sp,
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Switch(
-                        checked = ThemeUtil.isNightMode(ThemeUtil.themeState.value),
-                        onCheckedChange = {
-                            if (context.appPreferences.followSystemNight) {
-                                switchToNightDialogState.show()
-                            } else {
-                                ThemeUtil.switchNightMode()
-                            }
-                        }
-                    )
-                }
                 if (account != null) {
                     ListMenuItem(
                         icon = ImageVector.vectorResource(id = R.drawable.ic_help_outline_black_24),

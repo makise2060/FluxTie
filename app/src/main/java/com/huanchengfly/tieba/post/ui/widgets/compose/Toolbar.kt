@@ -64,6 +64,7 @@ import com.huanchengfly.tieba.post.ui.page.destinations.ForumSearchPostPageDesti
 import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
+import com.huanchengfly.tieba.post.toastShort
 import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.compose.calcStatusBarColor
 
@@ -97,6 +98,16 @@ fun AccountNavIcon(
     } else {
         val context = LocalContext.current
         val menuState = rememberMenuState()
+        val cuteMessages = remember {
+            listOf(
+                "不要再点了喵 (ฅ'ω'ฅ)",
+                "喵呜～人家会害羞的 (⁄⁄⁄▽⁄⁄⁄)",
+                "(=^･ω･^=) 点什么点喵！",
+                "喵？还有别的想看的吗 (๑•́ ₃ •̀๑)",
+                "(๑˃ᴗ˂)ﻭ 喵喵喵！",
+                "再点就要爆炸啦喵!! (ﾒﾟДﾟﾒ)"
+            )
+        }
         LongClickMenu(
             menuContent = {
                 val allAccounts = AccountUtil.allAccounts
@@ -151,7 +162,9 @@ fun AccountNavIcon(
                 }
             },
             menuState = menuState,
-            onClick = onClick,
+            onClick = onClick ?: {
+                context.toastShort(cuteMessages.random())
+            },
             shape = CircleShape
         ) {
             Avatar(

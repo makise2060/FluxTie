@@ -224,6 +224,8 @@ fun Card(
     Column(
         modifier = cardModifier
             .then(modifier)
+            .clip(RoundedCornerShape(20.dp))
+            .background(ExtendedTheme.colors.card)
             .then(paddingModifier)
             .padding(contentPadding)
     ) {

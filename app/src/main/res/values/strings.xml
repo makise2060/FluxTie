@@ -506,6 +506,7 @@
     <string name="tip_blocked_message">由于你的屏蔽设置，该消息已被屏蔽</string>
     <string name="tip_thread_store_deleted">该贴已被删除</string>
     <string name="button_clear">清除</string>
+    <string name="button_request_grant">去授权</string>
     <string name="button_search">搜索</string>
     <string name="toast_clear_failure">清除失败 %s</string>
     <string name="title_fuzzy_match_user">相关用户</string>

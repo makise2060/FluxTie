@@ -448,28 +448,36 @@ class PermissionRequester(val context: Context) {
         val permissionList = permissions.map { it.toIPermission() }
         if (XXPermissions.isGrantedPermissions(context, permissionList)) {
             onGranted?.invoke()
-        } else {
-            XXPermissions.with(context)
-                .permissions(permissionList)
-                .interceptor(ShowPermissionTipInterceptor(permissions, description))
-                .apply {
-                    if (unchecked) {
-                        unchecked()
-                    }
+            return
+        }
+        // 两段式：先弹说明弹窗，用户确认后才发起系统权限请求
+        val callback = object : OnPermissionCallback {
+            override fun onResult(
+                grantedList: MutableList<IPermission>,
+                deniedList: MutableList<IPermission>
+            ) {
+                if (deniedList.isEmpty()) {
+                    onGranted?.invoke()
+                } else {
+                    onDenied?.invoke()
                 }
-                .request(object : OnPermissionCallback {
-                    override fun onResult(
-                        grantedList: MutableList<IPermission>,
-                        deniedList: MutableList<IPermission>
-                    ) {
-                        if (deniedList.isEmpty()) {
-                            onGranted?.invoke()
-                        } else {
-                            onDenied?.invoke()
+            }
+        }
+        RequestPermissionTipDialog(
+            context,
+            PermissionUtils.PermissionData(permissions, description)
+        ).apply {
+            onConfirm = {
+                XXPermissions.with(context)
+                    .permissions(permissionList)
+                    .apply {
+                        if (unchecked) {
+                            unchecked()
                         }
                     }
-                })
-        }
+                    .request(callback)
+            }
+        }.show()
     }
 }
 

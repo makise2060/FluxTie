@@ -468,6 +468,12 @@ fun HomePage(
     val isError by remember { derivedStateOf { error != null } }
     val gridCells by remember { derivedStateOf { getGridCells(context, listSingle) } }
 
+    LaunchedEffect(isLoading) {
+        if (!isLoading) {
+            com.huanchengfly.tieba.post.ui.widgets.compose.SplashState.markReady()
+        }
+    }
+
     onGlobalEvent<GlobalEvent.Refresh>(
         filter = { it.key == "home" }
     ) {

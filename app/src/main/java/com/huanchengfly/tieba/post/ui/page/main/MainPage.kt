@@ -316,8 +316,8 @@ fun MainPage(
                 AnimatedContent(
                     targetState = currentPosition,
                     transitionSpec = {
-                        fadeIn(tween(durationMillis = 300, easing = EaseOutCubic)) togetherWith
-                                fadeOut(tween(durationMillis = 300, easing = EaseInCubic))
+                        (fadeIn(tween(durationMillis = 220, delayMillis = 60, easing = EaseOutCubic)) togetherWith
+                                fadeOut(tween(durationMillis = 140, easing = EaseInCubic)))
                     },
                     label = "mainPageContent",
                     modifier = Modifier.fillMaxSize(),

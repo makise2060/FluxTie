@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">贴吧 Lite</string>
+    <string name="app_name">FluxTie</string>
     <string name="title_notifications">消息</string>
     <string name="title_explore">动态</string>
     <string name="title_user">我</string>
@@ -56,7 +56,7 @@
     <string name="title_main">首页</string>
     <string name="title_jump_page">跳页</string>
     <string name="tip_jump_page">当前 %1$d/%2$d 页</string>
-    <string name="title_default">贴吧 Lite</string>
+    <string name="title_default">FluxTie</string>
     <string name="title_my_collect">我的收藏</string>
     <string name="title_at_me">提到我的</string>
     <string name="text_message_list_item_reply_my_thread">回复我的主题：%1$s</string>
@@ -122,7 +122,7 @@
     <string name="summary_auto_sign">开启后，将每天定时运行一键签到</string>
     <string name="summary_auto_sign_on">自动签到已开启</string>
     <string name="summary_auto_sign_time">当前设置为 %1$s</string>
-    <string name="tip_auto_sign">请允许贴吧 Lite 的自启动并忽略“电池优化”，否则可能无法正常唤醒签到。\n若使用的是 MIUI 等国产定制 UI，你还需要在系统设置中进行相应修改。</string>
+    <string name="tip_auto_sign">请允许 FluxTie 的自启动并忽略“电池优化”，否则可能无法正常唤醒签到。\n若使用的是 MIUI 等国产定制 UI，你还需要在系统设置中进行相应修改。</string>
     <string name="title_forum">%1$s吧</string>
     <string name="title_topic">#%1$s#</string>
     <string name="topic_index">贴吧话题榜 No.%1$d</string>
@@ -344,7 +344,7 @@
     <string name="common_permission_ignore_battery_optimize">忽略电池优化</string>
     <string name="common_permission_picture_in_picture">画中画</string>
     <string name="common_permission_vpn">\tVPN\t</string>
-    <string name="title_request_permission_tip_dialog">贴吧 Lite 正在请求“%1$s”权限</string>
+    <string name="title_request_permission_tip_dialog">FluxTie 正在请求“%1$s”权限</string>
     <string name="message_request_permission_tip_dialog">授权后，将%1$s</string>
     <string name="usage_webview_location_permission">用于向当前访问的网页提供你的位置信息，以便该网页向你提供相关服务。</string>
     <string name="relative_date_today">今天 %1$s</string>

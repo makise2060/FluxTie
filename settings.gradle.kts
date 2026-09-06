@@ -34,5 +34,5 @@ refreshVersions {
     }
 }
 
-rootProject.name = "TiebaLite"
+rootProject.name = "FluxTie"
 include(":app")

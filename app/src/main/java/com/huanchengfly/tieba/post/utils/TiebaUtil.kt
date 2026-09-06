@@ -41,7 +41,7 @@ object TiebaUtil {
         isSensitive: Boolean = false
     ) {
         val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clipData = ClipData.newPlainText("Tieba Lite", text).setIsSensitive(isSensitive)
+        val clipData = ClipData.newPlainText("FluxTie", text).setIsSensitive(isSensitive)
         cm.setPrimaryClip(clipData)
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
             context.toastShort(toast)
@@ -107,7 +107,7 @@ object TiebaUtil {
             type = "text/plain"
             putExtra(
                 Intent.EXTRA_TEXT,
-                "${if (title != null) "「$title」\n" else ""}$text\n（分享自贴吧 Lite）"
+                "${if (title != null) "「$title」\n" else ""}$text\n（分享自 FluxTie）"
             )
         })
     }

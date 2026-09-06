@@ -32,7 +32,7 @@
         app:layout_constraintTop_toTopOf="@+id/request_permission_tip_dialog_icon"
         app:layout_constraintVertical_chainStyle="packed"
         app:tint="@color/default_color_text"
-        tools:text="贴吧 Lite 正在请求“存储空间”权限" />
+        tools:text="FluxTie 正在请求“存储空间”权限" />
 
     <com.huanchengfly.tieba.post.ui.widgets.theme.TintTextView
         android:id="@+id/request_permission_tip_dialog_message"

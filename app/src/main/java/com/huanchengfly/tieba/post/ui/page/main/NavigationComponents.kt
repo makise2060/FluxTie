@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -468,10 +469,18 @@ fun FloatingBottomNav(
                 width = 1.dp,
                 color = themeColors.divider.copy(alpha = if (themeColors.isNightMode) 0.4f else 0.5f)
             ),
-            elevation = 8.dp,
+            elevation = 0.dp,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
+                // Bettbox 式贴平质感：仅一层极淡投影，无 Material 立体阴影
+                .shadow(
+                    elevation = 2.dp,
+                    shape = RoundedCornerShape(36.dp),
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = 0.06f),
+                    spotColor = Color.Black.copy(alpha = 0.08f)
+                )
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),

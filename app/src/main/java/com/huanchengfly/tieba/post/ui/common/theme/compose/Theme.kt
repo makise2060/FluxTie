@@ -472,7 +472,7 @@ private fun getSeedColor(
                 seedHex.toColorInt()
             }
         )
-    }.getOrDefault(Color(0xFF2C7BF2))
+    }.getOrDefault(Color(0xFF2196F3))
     val scheme = dynamicColorScheme(
         seedColor = seedColor,
         isDark = isDark,
@@ -547,7 +547,7 @@ fun TiebaLiteTheme(
     )
     val seedColorPref by rememberPreferenceAsState(
         key = stringPreferencesKey("custom_primary_color"),
-        defaultValue = "#FF2C7BF2"
+        defaultValue = "#FF2196F3"
     )
 
     val extendedColors = when {

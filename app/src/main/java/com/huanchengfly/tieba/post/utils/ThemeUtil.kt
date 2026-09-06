@@ -227,7 +227,12 @@ object ThemeUtil {
         val theme = getRawTheme()
         val isToolbarPrimaryColor: Boolean = INSTANCE.appPreferences.toolbarPrimaryColor
         return if (theme == THEME_CUSTOM) {
-            INSTANCE.appPreferences.customStatusBarFontDark
+            if (INSTANCE.appPreferences.useSeedTheme) {
+                // MD3 种子主题：状态栏字体跟随明暗模式，浅色用深色字体
+                !isNightMode(theme)
+            } else {
+                INSTANCE.appPreferences.customStatusBarFontDark
+            }
         } else if (isTranslucentTheme(theme)) {
             theme.contains("dark", ignoreCase = true)
         } else if (!isToolbarPrimaryColor) {

@@ -103,7 +103,7 @@ private fun parseSeedColor(hex: String): Color = runCatching {
             hex.toColorInt()
         }
     )
-}.getOrDefault(Color(0xFF2C7BF2))
+}.getOrDefault(Color(0xFF2196F3))
 
 private data class ThemeSwatch(
     val id: String,
@@ -153,7 +153,7 @@ fun CustomSettingsPage(
     )
     var seedColorPref by rememberPreferenceAsMutableState(
         key = stringPreferencesKey("custom_primary_color"),
-        defaultValue = "#FF2C7BF2"
+        defaultValue = "#FF2196F3"
     )
     val appIconDialogState = rememberDialogState()
     val customPrimaryColorDialogState = rememberDialogState()
@@ -188,16 +188,20 @@ fun CustomSettingsPage(
     val variantMonochrome = stringResource(id = R.string.scheme_monochrome)
     val variantRainbow = stringResource(id = R.string.scheme_rainbow)
     val variantFruitSalad = stringResource(id = R.string.scheme_fruit_salad)
-    val seedBlue = stringResource(id = R.string.seed_blue)
-    val seedTeal = stringResource(id = R.string.seed_teal)
+    val seedDefault = stringResource(id = R.string.seed_default)
+    val seedOcean = stringResource(id = R.string.seed_ocean)
     val seedSakura = stringResource(id = R.string.seed_sakura)
     val seedSpring = stringResource(id = R.string.seed_spring)
     val seedAutumn = stringResource(id = R.string.seed_autumn)
     val seedPurple = stringResource(id = R.string.seed_purple)
+    val seedGreen = stringResource(id = R.string.seed_green)
     val seedOrange = stringResource(id = R.string.seed_orange)
     val seedPink = stringResource(id = R.string.seed_pink)
+    val seedTeal = stringResource(id = R.string.seed_teal)
     val seedRed = stringResource(id = R.string.seed_red)
     val seedIndigo = stringResource(id = R.string.seed_indigo)
+    val seedAmber = stringResource(id = R.string.seed_amber)
+    val seedCyan = stringResource(id = R.string.seed_cyan)
 
     val schemeVariants = listOf(
         "TONAL_SPOT", "NEUTRAL", "VIBRANT", "EXPRESSIVE", "FIDELITY",
@@ -215,16 +219,20 @@ fun CustomSettingsPage(
         "FRUIT_SALAD" to variantFruitSalad,
     )
     val seedPresets = listOf(
-        ThemeSwatch("0xFF2C7BF2", seedBlue, Color(0xFF2C7BF2), Color(0xFF2C7BF2), Color.White),
-        ThemeSwatch("0xFF00897B", seedTeal, Color(0xFF00897B), Color(0xFF00897B), Color.White),
+        ThemeSwatch("0xFF2196F3", seedDefault, Color(0xFF2196F3), Color(0xFF2196F3), Color.White),
+        ThemeSwatch("0xFF116682", seedOcean, Color(0xFF116682), Color(0xFF116682), Color.White),
         ThemeSwatch("0xFF8E4955", seedSakura, Color(0xFF8E4955), Color(0xFF8E4955), Color.White),
         ThemeSwatch("0xFF4C662B", seedSpring, Color(0xFF4C662B), Color(0xFF4C662B), Color.White),
         ThemeSwatch("0xFF735C0C", seedAutumn, Color(0xFF735C0C), Color(0xFF735C0C), Color.White),
-        ThemeSwatch("0xFF6750A4", seedPurple, Color(0xFF6750A4), Color(0xFF6750A4), Color.White),
-        ThemeSwatch("0xFFEF6C00", seedOrange, Color(0xFFEF6C00), Color(0xFFEF6C00), Color.White),
-        ThemeSwatch("0xFFD81B60", seedPink, Color(0xFFD81B60), Color(0xFFD81B60), Color.White),
-        ThemeSwatch("0xFFC62828", seedRed, Color(0xFFC62828), Color(0xFFC62828), Color.White),
+        ThemeSwatch("0xFF9C27B0", seedPurple, Color(0xFF9C27B0), Color(0xFF9C27B0), Color.White),
+        ThemeSwatch("0xFF4CAF50", seedGreen, Color(0xFF4CAF50), Color(0xFF4CAF50), Color.White),
+        ThemeSwatch("0xFFFF9800", seedOrange, Color(0xFFFF9800), Color(0xFFFF9800), Color.White),
+        ThemeSwatch("0xFFE91E63", seedPink, Color(0xFFE91E63), Color(0xFFE91E63), Color.White),
+        ThemeSwatch("0xFF009688", seedTeal, Color(0xFF009688), Color(0xFF009688), Color.White),
+        ThemeSwatch("0xFFF44336", seedRed, Color(0xFFF44336), Color(0xFFF44336), Color.White),
         ThemeSwatch("0xFF3F51B5", seedIndigo, Color(0xFF3F51B5), Color(0xFF3F51B5), Color.White),
+        ThemeSwatch("0xFFFFC107", seedAmber, Color(0xFFFFC107), Color(0xFFFFC107), Color.White),
+        ThemeSwatch("0xFF00BCD4", seedCyan, Color(0xFF00BCD4), Color(0xFF00BCD4), Color.White),
     )
 
     // 自定义主色弹窗
@@ -441,7 +449,7 @@ fun CustomSettingsPage(
             val seedRows = (seedPresets + ThemeSwatch(
                 "custom",
                 customLabel,
-                Color(runCatching { seedColorPref.toColorInt() }.getOrDefault(0xFF2C7BF2.toInt())),
+                Color(runCatching { seedColorPref.toColorInt() }.getOrDefault(0xFF2196F3.toInt())),
                 Color.Transparent,
                 Color.Transparent
             )).chunked(4)

@@ -291,6 +291,15 @@ class MainActivityV2 : BaseComposeActivity() {
             requestPermission {
                 permissions = listOf(PermissionUtils.POST_NOTIFICATIONS)
                 description = getString(R.string.desc_permission_post_notifications)
+                onDenied = {
+                    // 系统不再弹窗（曾选"拒绝且不再询问"）时引导用户去设置开启
+                    runCatching {
+                        val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                        }
+                        startActivity(intent)
+                    }
+                }
             }
         }
     }
@@ -333,7 +342,8 @@ class MainActivityV2 : BaseComposeActivity() {
         }
         intent?.let { checkIntent(it) }
         launch {
-            delay(100)
+            // 延迟到应用内启动屏结束后再请求，避免弹窗被遮挡/打断
+            delay(2600)
             requestNotificationPermission()
         }
     }

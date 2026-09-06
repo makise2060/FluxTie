@@ -19,6 +19,17 @@
     <string name="title_history_delete">清空浏览记录</string>
     <string name="toast_delete_success">删除成功</string>
     <string name="title_about">关于</string>
+    <string name="summary_about_version">Version %1$s</string>
+    <string name="title_about_info">信息</string>
+    <string name="title_about_develop">开发</string>
+    <string name="title_check_update">检查更新</string>
+    <string name="title_open_source_license">开源许可</string>
+    <string name="title_project_source">项目源码</string>
+    <string name="title_app_logs">应用日志</string>
+    <string name="toast_copied">已复制到剪贴板</string>
+    <string name="button_copy">复制</string>
+    <string name="button_share">分享</string>
+    <string name="summary_logs_empty">暂无日志</string>
     <string name="my_info_settings">设置</string>
     <string name="title_settings">设置</string>
     <string name="title_settings_custom">外观设置</string>

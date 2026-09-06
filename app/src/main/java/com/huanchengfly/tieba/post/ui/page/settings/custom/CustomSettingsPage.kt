@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.rounded.Dock
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.FontDownload
 import androidx.compose.material.icons.rounded.FormatColorFill
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
@@ -70,6 +72,8 @@ import androidx.core.graphics.toColorInt
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.huanchengfly.tieba.post.App
+import com.materialkolor.PaletteStyle
+import com.materialkolor.dynamicColorScheme
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.AppFontSizeActivity
 import com.huanchengfly.tieba.post.components.dialogs.CustomThemeDialog
@@ -90,6 +94,16 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 private val SwatchShape = RoundedCornerShape(14.dp)
+
+private fun parseSeedColor(hex: String): Color = runCatching {
+    Color(
+        if (hex.startsWith("0x", ignoreCase = true)) {
+            hex.substring(2).toLong(16).toInt()
+        } else {
+            hex.toColorInt()
+        }
+    )
+}.getOrDefault(Color(0xFF2C7BF2))
 
 private data class ThemeSwatch(
     val id: String,
@@ -162,6 +176,7 @@ fun CustomSettingsPage(
     )
     val lightPreviewTheme = if (currentIsNight) oldTheme else currentTheme
     val hapticFeedback = LocalHapticFeedback.current
+    val currentIsNightForPreview = ThemeUtil.isNightMode()
     val customLabel = stringResource(id = R.string.title_theme_custom)
     val schemeStyleLabel = stringResource(id = R.string.title_scheme_style)
     val variantTonalSpot = stringResource(id = R.string.scheme_tonal_spot)
@@ -304,7 +319,7 @@ fun CustomSettingsPage(
         ) {
             // ── 主题模式
             item {
-                SectionLabel(text = stringResource(id = R.string.title_theme_mode))
+                SectionLabel(text = stringResource(id = R.string.title_theme_mode), icon = Icons.Rounded.BrightnessAuto)
             }
             item {
                 Row(
@@ -315,6 +330,7 @@ fun CustomSettingsPage(
                 ) {
                     ModeCard(
                         label = stringResource(id = R.string.title_theme_mode_auto),
+                        icon = Icons.Rounded.BrightnessAuto,
                         selected = followSystemNight,
                         onClick = { followSystemNight = true },
                         modifier = Modifier.weight(1f),
@@ -327,6 +343,7 @@ fun CustomSettingsPage(
                     )
                     ModeCard(
                         label = stringResource(id = R.string.title_theme_mode_light),
+                        icon = Icons.Rounded.LightMode,
                         selected = !followSystemNight && !currentIsNight,
                         onClick = {
                             followSystemNight = false
@@ -337,6 +354,7 @@ fun CustomSettingsPage(
                     )
                     ModeCard(
                         label = stringResource(id = R.string.title_theme_mode_dark),
+                        icon = Icons.Rounded.DarkMode,
                         selected = !followSystemNight && currentIsNight,
                         onClick = {
                             followSystemNight = false
@@ -350,7 +368,7 @@ fun CustomSettingsPage(
 
             // ── 深色样式
             item {
-                SectionLabel(text = stringResource(id = R.string.title_dark_style))
+                SectionLabel(text = stringResource(id = R.string.title_dark_style), icon = Icons.Rounded.DarkMode)
             }
             item {
                 Row(
@@ -376,46 +394,41 @@ fun CustomSettingsPage(
                 }
             }
 
-            // ── 配色风格（MD3 DynamicSchemeVariant）
+            // ── 配色风格（MD3 DynamicSchemeVariant，色卡即预览）
             item {
                 SectionLabel(text = schemeStyleLabel)
             }
             item {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp, vertical = 5.dp)
                 ) {
                     schemeVariants.forEach { variantId ->
-                        val selected = schemeVariant == variantId
-                        Text(
-                            text = variantLabels[variantId] ?: variantId,
-                            fontSize = 13.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selected) ExtendedTheme.colors.onPrimary else ExtendedTheme.colors.text,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(
-                                    color = if (selected) {
-                                        ExtendedTheme.colors.primary
-                                    } else {
-                                        ExtendedTheme.colors.card
-                                    }
-                                )
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = {
-                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        schemeVariant = variantId
-                                        if (useSeedTheme && currentTheme != ThemeUtil.THEME_CUSTOM) {
-                                            ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
-                                        }
-                                    }
-                                )
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        val style = runCatching { PaletteStyle.valueOf(variantId) }
+                            .getOrDefault(PaletteStyle.TonalSpot)
+                        val variantScheme = remember(seedColorPref, variantId, currentIsNight) {
+                            dynamicColorScheme(
+                                seedColor = parseSeedColor(seedColorPref),
+                                isDark = currentIsNight,
+                                style = style,
+                            )
+                        }
+                        VariantCard(
+                            label = variantLabels[variantId] ?: variantId,
+                            primary = variantScheme.primary,
+                            secondary = variantScheme.secondary,
+                            tertiary = variantScheme.tertiary,
+                            selected = schemeVariant == variantId,
+                            onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                schemeVariant = variantId
+                                if (useSeedTheme && currentTheme != ThemeUtil.THEME_CUSTOM) {
+                                    ThemeUtil.switchTheme(ThemeUtil.THEME_CUSTOM)
+                                }
+                            }
                         )
                     }
                 }
@@ -423,7 +436,7 @@ fun CustomSettingsPage(
 
             // ── 主题色彩（MD3 种子色）
             item {
-                SectionLabel(text = stringResource(id = R.string.title_theme_color))
+                SectionLabel(text = stringResource(id = R.string.title_theme_color), icon = Icons.Rounded.Palette)
             }
             val seedRows = (seedPresets + ThemeSwatch(
                 "custom",
@@ -431,7 +444,7 @@ fun CustomSettingsPage(
                 Color(runCatching { seedColorPref.toColorInt() }.getOrDefault(0xFF2C7BF2.toInt())),
                 Color.Transparent,
                 Color.Transparent
-            )).chunked(3)
+            )).chunked(4)
             items(seedRows.size) { rowIndex ->
                 val row = seedRows[rowIndex]
                 Row(
@@ -446,6 +459,8 @@ fun CustomSettingsPage(
                         ColorSwatchCard(
                             swatch = swatch,
                             selected = selected,
+                            schemeVariant = schemeVariant,
+                            isNight = currentIsNight,
                             modifier = Modifier.weight(1f),
                             onClick = {
                                 if (swatch.id == "custom") {
@@ -459,7 +474,7 @@ fun CustomSettingsPage(
                             }
                         )
                     }
-                    repeat(3 - row.size) {
+                    repeat(4 - row.size) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
@@ -488,14 +503,27 @@ fun CustomSettingsPage(
 }
 
 @Composable
-internal fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = ExtendedTheme.colors.textSecondary,
-        modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 24.dp, bottom = 8.dp)
-    )
+internal fun SectionLabel(text: String, icon: ImageVector? = null) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 24.dp, bottom = 10.dp)
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = ExtendedTheme.colors.primary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Text(
+            text = text,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = ExtendedTheme.colors.primary
+        )
+    }
 }
 
 /** Bettbox 风格分组卡片：圆角 20，组内行间细分隔线 */
@@ -657,6 +685,7 @@ private fun MiniScreenPreview(
 @Composable
 private fun ModeCard(
     label: String,
+    icon: ImageVector,
     selected: Boolean,
     preview: @Composable () -> Unit,
     onClick: () -> Unit,
@@ -668,43 +697,39 @@ private fun ModeCard(
         animationSpec = tween(durationMillis = 200),
         label = "modeCardBorder"
     )
-    val labelAlpha by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.6f,
-        animationSpec = tween(durationMillis = 200),
-        label = "modeCardLabelAlpha"
-    )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                color = if (selected) {
+                    ExtendedTheme.colors.primary.copy(alpha = 0.10f)
+                } else {
+                    ExtendedTheme.colors.card
+                }
+            )
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                }
+            )
+            .padding(10.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(0.72f)
-                .clip(RoundedCornerShape(14.dp))
-                .background(color = ExtendedTheme.colors.card)
-                .border(
-                    width = if (selected) 2.dp else 1.dp,
-                    color = borderColor,
-                    shape = RoundedCornerShape(14.dp)
-                )
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onClick()
-                    }
-                )
-                .padding(5.dp)
+                .aspectRatio(1.35f)
+                .clip(RoundedCornerShape(12.dp))
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(10.dp))
-            ) {
-                preview()
-            }
+            preview()
             if (selected) {
                 Icon(
                     imageVector = Icons.Rounded.Check,
@@ -712,23 +737,32 @@ private fun ModeCard(
                     tint = ExtendedTheme.colors.background,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(16.dp)
+                        .padding(5.dp)
+                        .size(18.dp)
                         .clip(CircleShape)
                         .background(ExtendedTheme.colors.primary)
-                        .padding(2.dp)
+                        .padding(3.dp)
                 )
             }
         }
-        Spacer(modifier = Modifier.size(6.dp))
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            textAlign = TextAlign.Center,
-            color = if (selected) ExtendedTheme.colors.primary else ExtendedTheme.colors.text,
-            modifier = Modifier.alpha(labelAlpha)
-        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) ExtendedTheme.colors.primary else ExtendedTheme.colors.textSecondary,
+                modifier = Modifier.size(15.dp)
+            )
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                color = if (selected) ExtendedTheme.colors.primary else ExtendedTheme.colors.text
+            )
+        }
     }
 }
 
@@ -806,13 +840,89 @@ private fun DarkStyleCard(
 }
 
 @Composable
+private fun VariantCard(
+    label: String,
+    primary: Color,
+    secondary: Color,
+    tertiary: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) ExtendedTheme.colors.primary else ExtendedTheme.colors.divider,
+        animationSpec = tween(durationMillis = 200),
+        label = "variantBorder"
+    )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(120.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(color = ExtendedTheme.colors.card)
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                }
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+                .background(primary)
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf(primary, secondary, tertiary).forEach { color ->
+                Spacer(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.size(4.dp))
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = if (selected) ExtendedTheme.colors.primary else ExtendedTheme.colors.text,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+    }
+}
+
+@Composable
 private fun ColorSwatchCard(
     swatch: ThemeSwatch,
     selected: Boolean,
+    schemeVariant: String,
+    isNight: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
+    // 三色点 = 该种子在当前配色风格下生成的 primary/secondary/tertiary（色卡即预览）
+    val scheme = remember(swatch.fill, schemeVariant, isNight) {
+        dynamicColorScheme(
+            seedColor = swatch.fill,
+            isDark = isNight,
+            style = runCatching { PaletteStyle.valueOf(schemeVariant) }
+                .getOrDefault(PaletteStyle.TonalSpot),
+        )
+    }
     val borderColor by animateColorAsState(
         targetValue = if (selected) ExtendedTheme.colors.primary else ExtendedTheme.colors.divider,
         animationSpec = tween(durationMillis = 200),
@@ -825,7 +935,7 @@ private fun ColorSwatchCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f)
+                .aspectRatio(0.9f)
                 .clip(SwatchShape)
                 .background(swatch.fill)
                 .border(
@@ -842,20 +952,25 @@ private fun ColorSwatchCard(
                     }
                 )
         ) {
-            Box(
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .height(30.dp)
-                    .background(swatch.stripeColor),
-                contentAlignment = Alignment.Center
+                    .background(ExtendedTheme.colors.background)
+                    .padding(vertical = 8.dp)
             ) {
-                Spacer(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(swatch.dotColor)
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    listOf(scheme.primary, scheme.secondary, scheme.tertiary).forEach { color ->
+                        Spacer(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                    }
+                }
             }
             if (selected) {
                 Icon(
@@ -863,12 +978,11 @@ private fun ColorSwatchCard(
                     contentDescription = stringResource(id = R.string.desc_checked),
                     tint = Color.White,
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(5.dp)
-                        .size(18.dp)
+                        .align(Alignment.Center)
+                        .size(32.dp)
                         .clip(CircleShape)
-                        .background(ExtendedTheme.colors.primary)
-                        .padding(2.dp)
+                        .background(Color.Black.copy(alpha = 0.25f))
+                        .padding(6.dp)
                 )
             }
         }

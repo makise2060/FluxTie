@@ -70,3 +70,6 @@ fastlane/readme.md
 CLAUDE.md
 
 commit-message.txt
+
+# 本地文档（不跟踪）
+local-docs/

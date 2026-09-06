@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.stoyanvuchev.systemuibarstweaker.SystemBarStyle
 import com.stoyanvuchev.systemuibarstweaker.SystemUIBarsTweaker
 import com.stoyanvuchev.systemuibarstweaker.rememberSystemUIBarsTweaker
@@ -59,6 +60,15 @@ abstract class BaseComposeActivity : BaseActivity<Nothing>() {
     override val isNeedImmersionBar: Boolean = false
     override val isNeedFixBg: Boolean = false
     override val isNeedSetTheme: Boolean = false
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // 部分 ROM（如 MIUI/HyperOS）会在窗口焦点变化时重置状态栏外观，此处强制刷新
+        if (hasFocus) {
+            WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
+                ThemeUtil.isStatusBarFontDark()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

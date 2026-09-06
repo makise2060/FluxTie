@@ -543,7 +543,7 @@ fun TiebaLiteTheme(
     )
     val seedVariant by rememberPreferenceAsState(
         key = stringPreferencesKey("theme_scheme_variant"),
-        defaultValue = "TONAL_SPOT"
+        defaultValue = "TonalSpot"
     )
     val seedColorPref by rememberPreferenceAsState(
         key = stringPreferencesKey("custom_primary_color"),

@@ -145,7 +145,7 @@ fun CustomSettingsPage(
     )
     var schemeVariant by rememberPreferenceAsMutableState(
         key = stringPreferencesKey("theme_scheme_variant"),
-        defaultValue = "TONAL_SPOT"
+        defaultValue = "TonalSpot"
     )
     var useSeedTheme by rememberPreferenceAsMutableState(
         key = booleanPreferencesKey("use_seed_theme"),
@@ -204,19 +204,19 @@ fun CustomSettingsPage(
     val seedCyan = stringResource(id = R.string.seed_cyan)
 
     val schemeVariants = listOf(
-        "TONAL_SPOT", "NEUTRAL", "VIBRANT", "EXPRESSIVE", "FIDELITY",
-        "CONTENT", "MONOCHROME", "RAINBOW", "FRUIT_SALAD",
+        "TonalSpot", "Neutral", "Vibrant", "Expressive", "Fidelity",
+        "Content", "Monochrome", "Rainbow", "FruitSalad",
     )
     val variantLabels = mapOf(
-        "TONAL_SPOT" to variantTonalSpot,
-        "NEUTRAL" to variantNeutral,
-        "VIBRANT" to variantVibrant,
-        "EXPRESSIVE" to variantExpressive,
-        "FIDELITY" to variantFidelity,
-        "CONTENT" to variantContent,
-        "MONOCHROME" to variantMonochrome,
-        "RAINBOW" to variantRainbow,
-        "FRUIT_SALAD" to variantFruitSalad,
+        "TonalSpot" to variantTonalSpot,
+        "Neutral" to variantNeutral,
+        "Vibrant" to variantVibrant,
+        "Expressive" to variantExpressive,
+        "Fidelity" to variantFidelity,
+        "Content" to variantContent,
+        "Monochrome" to variantMonochrome,
+        "Rainbow" to variantRainbow,
+        "FruitSalad" to variantFruitSalad,
     )
     val seedPresets = listOf(
         ThemeSwatch("0xFF2196F3", seedDefault, Color(0xFF2196F3), Color(0xFF2196F3), Color.White),
@@ -945,7 +945,7 @@ private fun ColorSwatchCard(
                 .fillMaxWidth()
                 .aspectRatio(0.9f)
                 .clip(SwatchShape)
-                .background(swatch.fill)
+                .background(scheme.primary)
                 .border(
                     width = if (selected) 2.dp else 1.dp,
                     color = borderColor,

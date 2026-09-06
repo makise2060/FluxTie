@@ -501,6 +501,14 @@
     <string name="button_expand_more_history">展开历史</string>
     <string name="button_expand_less_history">收起历史</string>
     <string name="button_clear_all">清除全部</string>
+    <string name="title_theme_mode">主题模式</string>
+    <string name="title_theme_mode_auto">自动</string>
+    <string name="title_theme_mode_light">浅色</string>
+    <string name="title_theme_mode_dark">深色</string>
+    <string name="title_dark_style">深色样式</string>
+    <string name="title_theme_color">主题色彩</string>
+    <string name="title_theme_more">更多</string>
+    <string name="title_theme_custom">自定义</string>
     <string name="title_dynamic_theme">动态取色</string>
     <string name="desc_night_theme">夜间主题</string>
     <string name="settings_image_darken_when_night_mode">夜间模式压暗缩略图</string>

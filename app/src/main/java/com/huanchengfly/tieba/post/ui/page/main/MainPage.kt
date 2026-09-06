@@ -1,24 +1,36 @@
 package com.huanchengfly.tieba.post.ui.page.main
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseInCubic
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,7 +60,6 @@ import com.huanchengfly.tieba.post.ui.page.main.user.UserPage
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
-import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoadHorizontalPager
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
@@ -137,14 +148,15 @@ fun MainPage(
             if (hideExplore) 3 else 4
         }
     }
-    val pagerState = rememberPagerState(
-        pageCount = { pageCount },
-        initialPage = if (hideExplore && defaultStart > 0) defaultStart - 1 else defaultStart
-    )
+    var currentPosition by rememberSaveable {
+        mutableIntStateOf(if (hideExplore && defaultStart > 0) defaultStart - 1 else defaultStart)
+    }
+
+    val onChangePosition: (Int) -> Unit = { currentPosition = it }
 
     LaunchedEffect(hideExplore) {
-        if (pagerState.currentPage == 3 && hideExplore) {
-            pagerState.scrollToPage(2)
+        if (currentPosition == 3 && hideExplore) {
+            currentPosition = 2
         }
     }
 
@@ -166,9 +178,7 @@ fun MainPage(
                             viewModel = homeViewModel,
                             canOpenExplore = !LocalContext.current.appPreferences.hideExplore
                         ) {
-                            coroutineScope.launch {
-                                pagerState.scrollToPage(1)
-                            }
+                            onChangePosition(1)
                         }
                     }
                 ),
@@ -264,10 +274,15 @@ fun MainPage(
             GlobalEvent.Refresh(key = navigationItems[it].id)
         )
     }
+    val liftUpBottomBar by rememberPreferenceAsState(
+        key = booleanPreferencesKey("liftUpBottomBar"),
+        defaultValue = LocalContext.current.appPreferences.liftUpBottomBar
+    )
+    val saveableStateHolder = rememberSaveableStateHolder()
     ProvideNavigator(navigator = navigator) {
         NavigationWrapper(
-            currentPosition = pagerState.currentPage,
-            onChangePosition = { coroutineScope.launch { pagerState.scrollToPage(it) } },
+            currentPosition = currentPosition,
+            onChangePosition = onChangePosition,
             onReselected = onReselected,
             navigationItems = navigationItems,
             navigationType = navigationType,
@@ -278,35 +293,46 @@ fun MainPage(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = {
                     AnimatedVisibility(visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION) {
-                        BottomNavigation(
-                            currentPosition = pagerState.currentPage,
-                            onChangePosition = {
-                                coroutineScope.launch { pagerState.scrollToPage(it) }
-                            },
-                            onReselected = onReselected,
-                            navigationItems = navigationItems,
-                            themeColors = themeColors,
-                        )
+                        if (liftUpBottomBar) {
+                            FloatingBottomNav(
+                                currentPosition = currentPosition,
+                                onChangePosition = onChangePosition,
+                                onReselected = onReselected,
+                                navigationItems = navigationItems,
+                                themeColors = themeColors,
+                            )
+                        } else {
+                            BottomNavigation(
+                                currentPosition = currentPosition,
+                                onChangePosition = onChangePosition,
+                                onReselected = onReselected,
+                                navigationItems = navigationItems,
+                                themeColors = themeColors,
+                            )
+                        }
                     }
                 }
             ) { paddingValues ->
-                LazyLoadHorizontalPager(
-                    contentPadding = paddingValues,
-                    state = pagerState,
-                    key = { navigationItems[it].id },
+                AnimatedContent(
+                    targetState = currentPosition,
+                    transitionSpec = {
+                        fadeIn(tween(durationMillis = 300, easing = EaseOutCubic)) togetherWith
+                                fadeOut(tween(durationMillis = 300, easing = EaseInCubic))
+                    },
+                    label = "mainPageContent",
                     modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.Top,
-                    userScrollEnabled = false
-                ) {
-                    navigationItems[it].content()
+                ) { page ->
+                    Box(modifier = Modifier.padding(paddingValues)) {
+                        saveableStateHolder.SaveableStateProvider(navigationItems[page].id) {
+                            navigationItems[page].content()
+                        }
+                    }
                 }
             }
         }
     }
-    BackHandler(enabled = pagerState.currentPage != 0) {
-        coroutineScope.launch {
-            pagerState.scrollToPage(0)
-        }
+    BackHandler(enabled = currentPosition != 0) {
+        currentPosition = 0
     }
 }
 

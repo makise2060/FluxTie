@@ -33,7 +33,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.persistentListOf
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -128,12 +127,6 @@ fun ConcernPage(
                                     onClickForum = { navigator.navigate(ForumPageDestination(it.name)) },
                                     onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
                                 )
-                                if (index < data.size - 1) {
-                                    VerticalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        thickness = 2.dp
-                                    )
-                                }
                             }
                         } else {
                             Box {}

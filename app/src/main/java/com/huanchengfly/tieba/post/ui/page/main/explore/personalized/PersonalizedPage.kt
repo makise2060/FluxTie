@@ -71,7 +71,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -320,12 +319,6 @@ private fun FeedList(
                 ) { hiddenThreadIds.contains(item.get { threadId }) || hidden }
             val isRefreshPosition =
                 remember(index, refreshPosition) { index + 1 == refreshPosition }
-            val isNotLast = remember(index, data.size) { index < data.size - 1 }
-            val showDivider = remember(
-                isHidden,
-                isRefreshPosition,
-                isNotLast
-            ) { !isHidden && !isRefreshPosition && isNotLast }
             Container {
                 AnimatedVisibility(
                     visible = !isHidden,
@@ -361,12 +354,6 @@ private fun FeedList(
                                             }
                                         )
                                     }
-                                }
-                                if (showDivider) {
-                                    VerticalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        thickness = 2.dp
-                                    )
                                 }
                             }
                         }

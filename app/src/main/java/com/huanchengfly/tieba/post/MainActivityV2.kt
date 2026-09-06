@@ -86,6 +86,7 @@ import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
 import com.huanchengfly.tieba.post.ui.utils.isSeparating
+import com.huanchengfly.tieba.post.ui.widgets.compose.AppSplashOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
@@ -507,6 +508,8 @@ class MainActivityV2 : BaseComposeActivity() {
                 }
             }
         }
+
+        AppSplashOverlay()
     }
 
     @Composable

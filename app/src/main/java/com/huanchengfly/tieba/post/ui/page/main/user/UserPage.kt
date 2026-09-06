@@ -26,6 +26,11 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.CollectionsBookmark
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SupportAgent
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -36,19 +41,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eygraber.compose.placeholder.material.placeholder
+import com.github.panpf.sketch.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.page.settings.custom.AppearanceCard
+import com.huanchengfly.tieba.post.ui.page.settings.custom.CardDivider
+import com.huanchengfly.tieba.post.ui.page.settings.custom.SettingRow
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.AboutPageDestination
@@ -77,12 +88,12 @@ private fun StatCardPlaceholder(modifier: Modifier = Modifier) {
             statNum = 0,
             statText = stringResource(id = R.string.text_stat_follow)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
+        HorizontalDivider(color = ExtendedTheme.colors.divider)
         StatCardItem(
             statNum = 0,
             statText = stringResource(id = R.string.text_stat_fans)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
+        HorizontalDivider(color = ExtendedTheme.colors.divider)
         StatCardItem(
             statNum = 0,
             statText = stringResource(id = R.string.title_stat_posts_num)
@@ -112,12 +123,12 @@ private fun StatCard(
                 Modifier
             }
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
+        HorizontalDivider(color = ExtendedTheme.colors.divider)
         StatCardItem(
             statNum = fansNum,
             statText = stringResource(id = R.string.text_stat_fans)
         )
-        HorizontalDivider(color = Color(if (ExtendedTheme.colors.isNightMode) 0xFF808080 else 0xFFDEDEDE))
+        HorizontalDivider(color = ExtendedTheme.colors.divider)
         StatCardItem(
             statNum = postNum,
             statText = stringResource(id = R.string.title_stat_posts_num)
@@ -272,91 +283,162 @@ fun UserPage(
                     .fillMaxSize()
             ) {
                 if (account != null) {
-                    InfoCard(
+                    // FluxDo 风格头部：左侧大标题用户名 + 签名，右侧大头像
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .padding(top = 8.dp)
+                            .fillMaxWidth()
                             .clickable {
                                 navigator.navigate(UserProfilePageDestination(account!!.uid.toLong()))
                             }
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                        userName = account!!.nameShow ?: account!!.name,
-                        userIntro = account!!.intro ?: stringResource(id = R.string.tip_no_intro),
-                        avatar = StringUtil.getAvatarUrl(account!!.portrait),
-                    )
+                            .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 16.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = account!!.nameShow ?: account!!.name,
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Black,
+                                color = ExtendedTheme.colors.text,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = account!!.intro ?: stringResource(id = R.string.tip_no_intro),
+                                fontSize = 13.sp,
+                                color = ExtendedTheme.colors.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        AsyncImage(
+                            imageUri = StringUtil.getAvatarUrl(account!!.portrait),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                        )
+                    }
                     StatCard(
                         account = account!!,
                         modifier = Modifier
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(color = ExtendedTheme.colors.chip)
+                            .padding(horizontal = 16.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(color = ExtendedTheme.colors.card)
                             .padding(vertical = 18.dp),
                         onFollowClick = {
                             navigator.navigate(FollowListPageDestination())
                         }
                     )
                 } else if (isLoading) {
-                    InfoCard(
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 16.dp)
-                            .padding(top = 8.dp),
-                        isPlaceholder = true,
-                    )
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 16.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 140.dp, height = 28.dp)
+                                    .placeholder(visible = true, color = ExtendedTheme.colors.chip)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 200.dp, height = 14.dp)
+                                    .placeholder(visible = true, color = ExtendedTheme.colors.chip)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .placeholder(visible = true, color = ExtendedTheme.colors.chip)
+                        )
+                    }
                     StatCardPlaceholder(
                         modifier = Modifier
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(color = ExtendedTheme.colors.chip)
+                            .padding(horizontal = 16.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(color = ExtendedTheme.colors.card)
                             .padding(vertical = 18.dp)
                     )
                 } else {
-                    LoginTipCard(
+                    // 未登录头部
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 16.dp)
-                            .padding(top = 8.dp),
-                    )
-                }
-                if (account != null) {
-                    ListMenuItem(
-                        icon = ImageVector.vectorResource(id = R.drawable.ic_favorite),
-                        text = stringResource(id = R.string.title_my_collect),
-                        onClick = {
-                            navigator.navigate(ThreadStorePageDestination)
-                        }
-                    )
-                }
-                ListMenuItem(
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_outline_watch_later_24),
-                    text = stringResource(id = R.string.title_history),
-                    onClick = {
-                        navigator.navigate(HistoryPageDestination)
-                    }
-                )
-                if (account != null) {
-                    ListMenuItem(
-                        icon = ImageVector.vectorResource(id = R.drawable.ic_help_outline_black_24),
-                        text = stringResource(id = R.string.my_info_service_center),
-                        onClick = {
-                            navigator.navigate(
-                                WebViewPageDestination(
-                                    initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${CuidUtils.getNewCuid()}&cuid_galaxy2=${CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
-                                )
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 16.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(id = R.string.tip_login),
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Black,
+                                color = ExtendedTheme.colors.text
                             )
-                        },
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Icon(
+                            imageVector = Icons.Rounded.AccountCircle,
+                            contentDescription = null,
+                            tint = ExtendedTheme.colors.onChip,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(color = ExtendedTheme.colors.chip)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                AppearanceCard {
+                    if (account != null) {
+                        SettingRow(
+                            icon = Icons.Rounded.CollectionsBookmark,
+                            title = stringResource(id = R.string.title_my_collect),
+                            onClick = { navigator.navigate(ThreadStorePageDestination) }
+                        )
+                        CardDivider()
+                    }
+                    SettingRow(
+                        icon = Icons.Rounded.History,
+                        title = stringResource(id = R.string.title_history),
+                        onClick = { navigator.navigate(HistoryPageDestination) }
                     )
                 }
-                VerticalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)
-                )
-                ListMenuItem(
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_settings_24),
-                    text = stringResource(id = R.string.my_info_settings),
-                    onClick = { navigator.navigate(SettingsPageDestination) },
-                )
-                ListMenuItem(
-                    icon = ImageVector.vectorResource(id = R.drawable.ic_info_black_24),
-                    text = stringResource(id = R.string.my_info_about),
-                    onClick = { navigator.navigate(AboutPageDestination) },
-                )
+                Spacer(modifier = Modifier.height(12.dp))
+                AppearanceCard {
+                    if (account != null) {
+                        SettingRow(
+                            icon = Icons.Rounded.SupportAgent,
+                            title = stringResource(id = R.string.my_info_service_center),
+                            onClick = {
+                                navigator.navigate(
+                                    WebViewPageDestination(
+                                        initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${'$'}{CuidUtils.getNewCuid()}&cuid_galaxy2=${'$'}{CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${'$'}{System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
+                                    )
+                                )
+                            }
+                        )
+                        CardDivider()
+                    }
+                    SettingRow(
+                        icon = Icons.Rounded.Settings,
+                        title = stringResource(id = R.string.my_info_settings),
+                        onClick = { navigator.navigate(SettingsPageDestination) }
+                    )
+                    CardDivider()
+                    SettingRow(
+                        icon = Icons.Rounded.Info,
+                        title = stringResource(id = R.string.my_info_about),
+                        onClick = { navigator.navigate(AboutPageDestination) }
+                    )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
             PullRefreshIndicator(

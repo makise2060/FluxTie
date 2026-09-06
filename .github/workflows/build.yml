@@ -23,6 +23,8 @@ jobs:
 
       - name: Decode Keystore
         id: decode_keystore
+        # 未配置签名 secrets 时跳过，构建回退 debug 签名
+        continue-on-error: true
         if: startsWith(github.ref, 'refs/tags/')
         uses: timheuer/base64-to-file@v2
         with:

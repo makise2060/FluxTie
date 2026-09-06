@@ -139,6 +139,16 @@ android {
     namespace = "com.huanchengfly.tieba.post"
 }
 
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set(
+                "FluxTie-v${applicationVersionName}(${applicationVersionCode})-${variant.name}.apk"
+            )
+        }
+    }
+}
+
 dependencies {
     //Local Files
 //    implementation fileTree(include: ["*.jar"], dir: "libs")

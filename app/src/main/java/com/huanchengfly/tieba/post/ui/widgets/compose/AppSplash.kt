@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,23 +50,28 @@ import kotlinx.coroutines.delay
  */
 @Composable
 fun AppSplashOverlay() {
-    var visible by remember { mutableStateOf(true) }
+    var visible by remember { mutableStateOf(false) }
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(durationMillis = 300),
+        animationSpec = tween(durationMillis = 250),
         label = "splashAlpha"
     )
     LaunchedEffect(Unit) {
+        // 淡入接管系统启动屏
+        visible = true
         delay(1800)
+        // 淡出过渡到主页
         visible = false
     }
     if (alpha > 0.01f) {
         val context = LocalContext.current
+        // 背景与系统启动屏（windowSplashScreenBackground）同源，避免两段启动屏颜色跳变
+        val splashBg = colorResource(id = R.color.colorSplashBg)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(alpha)
-                .background(ExtendedTheme.colors.windowBackground)
+                .background(splashBg)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

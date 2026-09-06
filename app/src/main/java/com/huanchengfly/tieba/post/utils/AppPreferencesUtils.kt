@@ -106,7 +106,7 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
     var doNotUsePhotoPicker by DataStoreDelegates.boolean(defaultValue = false)
 
     var useDynamicColorTheme by DataStoreDelegates.boolean(defaultValue = false)
-    var useSeedTheme by DataStoreDelegates.boolean(defaultValue = false)
+    var useSeedTheme by DataStoreDelegates.boolean(defaultValue = false, key = "use_seed_theme")
 
     var followSystemNight by DataStoreDelegates.boolean(
         defaultValue = true,

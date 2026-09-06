@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -38,15 +39,23 @@ fun PullRefreshLogoIndicator(
             backgroundColor = backgroundColor,
             contentColor = contentColor,
         )
-        Image(
-            painter = rememberDrawablePainter(
-                drawable = LocalContext.current.getDrawable(R.mipmap.ic_launcher_new_round)
-            ),
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(20.dp)
-                .clip(CircleShape)
-        )
+        val progress = state.progress
+        if (progress > 0.01f || refreshing) {
+            Image(
+                painter = rememberDrawablePainter(
+                    drawable = LocalContext.current.getDrawable(R.mipmap.ic_launcher_new_round)
+                ),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(20.dp)
+                    .graphicsLayer {
+                        scaleX = progress
+                        scaleY = progress
+                        alpha = progress
+                    }
+                    .clip(CircleShape)
+            )
+        }
     }
 }

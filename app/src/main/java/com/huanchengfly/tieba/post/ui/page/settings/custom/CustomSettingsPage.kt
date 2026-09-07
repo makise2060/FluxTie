@@ -492,6 +492,55 @@ fun CustomSettingsPage(
             item {
                 SectionLabel(text = stringResource(id = R.string.title_theme_more))
             }
+            item {
+                AppearanceCard {
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.PhotoSizeSelectActual,
+                        title = stringResource(id = R.string.title_settings_status_bar_darker),
+                        summary = stringResource(id = R.string.summary_settings_status_bar_darker),
+                        key = "status_bar_darker",
+                        defaultValue = true,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.FormatColorFill,
+                        title = stringResource(id = R.string.tip_toolbar_primary_color),
+                        summary = stringResource(id = R.string.tip_toolbar_primary_color_summary),
+                        key = "toolbarPrimaryColor",
+                        defaultValue = false,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.ViewAgenda,
+                        title = stringResource(id = R.string.settings_forum_single),
+                        key = "listSingle",
+                        defaultValue = false,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.Explore,
+                        title = stringResource(id = R.string.title_hide_explore),
+                        key = "hideExplore",
+                        defaultValue = false,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.Dock,
+                        title = stringResource(id = R.string.title_floating_bottom_nav),
+                        summary = stringResource(id = R.string.summary_floating_bottom_nav),
+                        key = "floatingBottomNav",
+                        defaultValue = true,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.Upcoming,
+                        title = stringResource(id = R.string.title_lift_up_bottom_bar),
+                        summary = stringResource(id = R.string.summary_lift_up_bottom_bar),
+                        key = "liftUpBottomBar",
+                        defaultValue = true,
+                    )
+                }
+            }
 
             // ── 字体
             item {

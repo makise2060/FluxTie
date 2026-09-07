@@ -11,16 +11,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Tab
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -35,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -74,6 +80,7 @@ import kotlin.math.min
 @Immutable
 data class ExplorePageItem(
     val id: String,
+    val icon: ImageVector,
     val name: @Composable (selected: Boolean) -> Unit,
     val content: @Composable () -> Unit,
 )
@@ -103,6 +110,13 @@ private fun ColumnScope.ExplorePageTab(
     ) {
         pages.fastForEachIndexed { index, item ->
             Tab(
+                icon = {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
                 text = { item.name(pagerState.currentPage == index) },
                 selected = pagerState.currentPage == index,
                 onClick = {
@@ -145,16 +159,19 @@ fun ExplorePage() {
         listOfNotNull(
             if (loggedIn) ExplorePageItem(
                 "concern",
+                icon = Icons.Rounded.Favorite,
                 { TabText(text = stringResource(id = R.string.title_concern), selected = it) },
                 { ConcernPage() }
             ) else null,
             ExplorePageItem(
                 "personalized",
+                icon = Icons.Rounded.AutoAwesome,
                 { TabText(text = stringResource(id = R.string.title_personalized), selected = it) },
                 { PersonalizedPage() }
             ),
             ExplorePageItem(
                 "hot",
+                icon = Icons.Rounded.LocalFireDepartment,
                 { TabText(text = stringResource(id = R.string.title_hot), selected = it) },
                 { HotPage() }
             ),

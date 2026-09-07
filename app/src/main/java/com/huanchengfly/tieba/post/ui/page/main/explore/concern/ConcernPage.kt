@@ -94,7 +94,9 @@ fun ConcernPage(
                 ) { index, item ->
                     Container {
                         if (item.recommendType == 1) {
-                            Column {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
                                 FeedCard(
                                     item = wrapImmutable(item.threadList!!),
                                     onClick = {
@@ -141,7 +143,7 @@ fun ConcernPage(
             state = pullRefreshState,
             modifier = Modifier.align(Alignment.TopCenter),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
+            contentColor = ExtendedTheme.colors.onPrimary,
         )
     }
 }

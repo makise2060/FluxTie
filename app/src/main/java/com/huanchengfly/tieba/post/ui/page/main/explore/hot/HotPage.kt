@@ -295,62 +295,66 @@ fun HotPage(
                         key = { _, item -> "Thread_${item.get { threadId }}" }
                     ) { index, item ->
                         Container {
-                            FeedCard(
-                                item = item,
-                                onClick = {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = it.id,
-                                            threadInfo = it
-                                        )
-                                    )
-                                },
-                                onClickReply = {
-                                    navigator.navigate(
-                                        ThreadPageDestination(
-                                            threadId = it.id,
-                                            scrollToReply = true
-                                        )
-                                    )
-                                },
-                                onAgree = {
-                                    viewModel.send(
-                                        HotUiIntent.Agree(
-                                            threadId = it.threadId,
-                                            postId = it.firstPostId,
-                                            hasAgree = it.hasAgree
-                                        )
-                                    )
-                                },
-                                onClickForum = { navigator.navigate(ForumPageDestination(it.name)) },
-                                onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
+                            Column(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.End,
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                FeedCard(
+                                    item = item,
+                                    onClick = {
+                                        navigator.navigate(
+                                            ThreadPageDestination(
+                                                threadId = it.id,
+                                                threadInfo = it
+                                            )
+                                        )
+                                    },
+                                    onClickReply = {
+                                        navigator.navigate(
+                                            ThreadPageDestination(
+                                                threadId = it.id,
+                                                scrollToReply = true
+                                            )
+                                        )
+                                    },
+                                    onAgree = {
+                                        viewModel.send(
+                                            HotUiIntent.Agree(
+                                                threadId = it.threadId,
+                                                postId = it.firstPostId,
+                                                hasAgree = it.hasAgree
+                                            )
+                                        )
+                                    },
+                                    onClickForum = { navigator.navigate(ForumPageDestination(it.name)) },
+                                    onClickUser = { navigator.navigate(UserProfilePageDestination(it.id)) },
                                 ) {
-                                    val color = when (index) {
-                                        0 -> RedA700
-                                        1 -> OrangeA700
-                                        2 -> Yellow
-                                        else -> MaterialTheme.colors.onBackground.copy(
-                                            ContentAlpha.medium
+                                    Column(
+                                        horizontalAlignment = Alignment.End,
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        val color = when (index) {
+                                            0 -> RedA700
+                                            1 -> OrangeA700
+                                            2 -> Yellow
+                                            else -> MaterialTheme.colors.onBackground.copy(
+                                                ContentAlpha.medium
+                                            )
+                                        }
+                                        Text(
+                                            text = "${index + 1}",
+                                            color = color,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp
+                                        )
+                                        Text(
+                                            text = stringResource(
+                                                id = R.string.hot_num,
+                                                item.get { hotNum }.getShortNumString()
+                                            ),
+                                            style = MaterialTheme.typography.caption,
+                                            color = color
                                         )
                                     }
-                                    Text(
-                                        text = "${index + 1}",
-                                        color = color,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
-                                    Text(
-                                        text = stringResource(
-                                            id = R.string.hot_num,
-                                            item.get { hotNum }.getShortNumString()
-                                        ),
-                                        style = MaterialTheme.typography.caption,
-                                        color = color
-                                    )
                                 }
                             }
                         }
@@ -376,7 +380,7 @@ fun HotPage(
             state = pullRefreshState,
             modifier = Modifier.align(Alignment.TopCenter),
             backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.primary,
+            contentColor = ExtendedTheme.colors.onPrimary,
         )
     }
 }

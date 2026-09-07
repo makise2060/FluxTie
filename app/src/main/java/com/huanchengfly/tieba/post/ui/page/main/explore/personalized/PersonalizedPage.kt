@@ -241,7 +241,7 @@ fun PersonalizedPage(
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
+                contentColor = ExtendedTheme.colors.onPrimary,
             )
 
             AnimatedVisibility(
@@ -331,7 +331,7 @@ private fun FeedList(
                             blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp, horizontal = 16.dp)
+                                .padding(vertical = 6.dp, horizontal = 10.dp)
                         ) {
                             Column {
                                 FeedCard(

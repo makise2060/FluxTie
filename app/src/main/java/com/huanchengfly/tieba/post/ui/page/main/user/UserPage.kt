@@ -446,7 +446,7 @@ fun UserPage(
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-                contentColor = ExtendedTheme.colors.primary,
+                contentColor = ExtendedTheme.colors.onPrimary,
             )
         }
     }

@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -293,25 +294,24 @@ private fun ForumItemMenuContent(
 @Composable
 private fun ForumItemContent(
     item: HomeUiState.Forum,
-    showAvatar: Boolean
+    listSingle: Boolean
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(
+                horizontal = if (listSingle) 16.dp else 12.dp,
+                vertical = 12.dp
+            ),
         verticalAlignment = CenterVertically
     ) {
-        // 头像在左
-        AnimatedVisibility(visible = showAvatar) {
-            Row {
-                Avatar(
-                    data = item.avatar,
-                    size = 40.dp,
-                    contentDescription = stringResource(R.string.forum_portrait)
-                )
-                Spacer(modifier = Modifier.width(14.dp))
-            }
-        }
+        // 两种列表风格均展示吧 Logo
+        Avatar(
+            data = item.avatar,
+            size = if (listSingle) 40.dp else 34.dp,
+            contentDescription = stringResource(R.string.forum_portrait)
+        )
+        Spacer(modifier = Modifier.width(if (listSingle) 14.dp else 8.dp))
         Column(
             modifier = Modifier
                 .fillMaxHeight()
@@ -327,18 +327,16 @@ private fun ForumItemContent(
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
             )
-            AnimatedVisibility(visible = showAvatar) {
-                Spacer(modifier = Modifier.height(2.dp))
-                // 热度值显示
-                Text(
-                    text = stringResource(
-                        R.string.hot_num,
-                        item.hotNum.getShortNumString()
-                    ),
-                    color = ExtendedTheme.colors.onChip,
-                    fontSize = 10.sp
-                )
-            }
+            Spacer(modifier = Modifier.height(2.dp))
+            // 热度值显示
+            Text(
+                text = stringResource(
+                    R.string.hot_num,
+                    item.hotNum.getShortNumString()
+                ),
+                color = ExtendedTheme.colors.onChip,
+                fontSize = 10.sp
+            )
         }
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -388,7 +386,7 @@ private fun ForumItemContent(
 @Composable
 private fun ForumItem(
     item: HomeUiState.Forum,
-    showAvatar: Boolean,
+    listSingle: Boolean,
     onClick: (HomeUiState.Forum) -> Unit,
     onUnfollow: (HomeUiState.Forum) -> Unit,
     onAddTopForum: (HomeUiState.Forum) -> Unit,
@@ -415,7 +413,7 @@ private fun ForumItem(
             onClick(item)
         }
     ) {
-        ForumItemContent(item = item, showAvatar = showAvatar)
+        ForumItemContent(item = item, listSingle = listSingle)
     }
 }
 

@@ -4,6 +4,8 @@ import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -11,7 +13,10 @@ import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -26,10 +31,6 @@ import com.github.panpf.sketch.compose.AsyncImage
 import com.github.panpf.sketch.fetch.newResourceUri
 import com.github.panpf.sketch.request.DisplayRequest
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import com.eygraber.compose.placeholder.PlaceholderHighlight
-import com.eygraber.compose.placeholder.material.fade
-import com.eygraber.compose.placeholder.material.placeholder
-import com.huanchengfly.tieba.post.utils.ImageUtil
 
 object Sizes {
     val Tiny = 24.dp
@@ -90,17 +91,20 @@ fun AvatarPlaceholder(
     size: Dp,
     modifier: Modifier = Modifier,
 ) {
-    Avatar(
-        data = ImageUtil.getPlaceHolder(LocalContext.current, 0),
-        size = size,
-        contentDescription = null,
-        modifier = modifier.placeholder(
-            visible = true,
-            color = MaterialTheme.colors.surface,
-            highlight = PlaceholderHighlight.fade(),
-            shape = CircleShape
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(MaterialTheme.colors.onSurface.copy(alpha = 0.08f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Person,
+            contentDescription = null,
+            tint = MaterialTheme.colors.onSurface.copy(alpha = 0.32f),
+            modifier = Modifier.fillMaxSize(0.55f)
         )
-    )
+    }
 }
 
 @Composable
@@ -126,17 +130,27 @@ fun Avatar(
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
 ) {
-    val context = LocalContext.current
-
-    AsyncImage(
-        request = DisplayRequest(LocalContext.current, data) {
-            placeholder(ImageUtil.getPlaceHolder(context, 0))
-            crossfade()
-        },
-        contentDescription = contentDescription,
-        contentScale = ContentScale.Crop,
-        modifier = modifier.clip(shape),
-    )
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(MaterialTheme.colors.onSurface.copy(alpha = 0.08f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Person,
+            contentDescription = null,
+            tint = MaterialTheme.colors.onSurface.copy(alpha = 0.32f),
+            modifier = Modifier.fillMaxSize(0.55f)
+        )
+        AsyncImage(
+            request = DisplayRequest(LocalContext.current, data) {
+                crossfade(durationMillis = 200)
+            },
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize(),
+        )
+    }
 }
 
 @Composable
@@ -146,19 +160,28 @@ fun Avatar(
     contentDescription: String?,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-
-    AsyncImage(
-        request = DisplayRequest(LocalContext.current, newResourceUri(data)) {
-            placeholder(ImageUtil.getPlaceHolder(context, 0))
-            crossfade()
-        },
-        contentDescription = contentDescription,
-        contentScale = ContentScale.Crop,
+    Box(
         modifier = modifier
             .size(size)
-            .clip(CircleShape),
-    )
+            .clip(CircleShape)
+            .background(MaterialTheme.colors.onSurface.copy(alpha = 0.08f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Person,
+            contentDescription = null,
+            tint = MaterialTheme.colors.onSurface.copy(alpha = 0.32f),
+            modifier = Modifier.fillMaxSize(0.55f)
+        )
+        AsyncImage(
+            request = DisplayRequest(LocalContext.current, newResourceUri(data)) {
+                crossfade(durationMillis = 200)
+            },
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize(),
+        )
+    }
 }
 
 @Composable

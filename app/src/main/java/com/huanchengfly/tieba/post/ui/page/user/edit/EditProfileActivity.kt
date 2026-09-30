@@ -292,7 +292,7 @@ fun EditProfileCard(
                     .size(64.dp)
                     .clip(CircleShape)
                     .align(Alignment.CenterHorizontally)
-                    .placeholder(visible = loading, color = MaterialTheme.colors.surface)
+                    .placeholder(visible = loading, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
             ) {
                 AsyncImage(
                     imageUri = StringUtil.getAvatarUrl(portrait),
@@ -360,7 +360,7 @@ fun EditProfileCard(
                             end.linkTo(parent.end)
                             width = Dimension.fillToConstraints
                         }
-                        .placeholder(visible = loading, color = MaterialTheme.colors.surface)
+                        .placeholder(visible = loading, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
                 )
 
                 Text(
@@ -380,7 +380,7 @@ fun EditProfileCard(
                             end.linkTo(parent.end)
                             width = Dimension.fillToConstraints
                         }
-                        .placeholder(visible = loading, color = MaterialTheme.colors.surface)
+                        .placeholder(visible = loading, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
                 ) {
                     BaseTextField(
                         value = nickName,
@@ -412,7 +412,7 @@ fun EditProfileCard(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) { onModifySex?.invoke() }
-                        .placeholder(visible = loading, color = MaterialTheme.colors.surface)
+                        .placeholder(visible = loading, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
                 ) {
                     Text(
                         text = stringResource(
@@ -457,7 +457,7 @@ fun EditProfileCard(
                             end.linkTo(parent.end)
                             width = Dimension.fillToConstraints
                         }
-                        .placeholder(visible = loading, color = MaterialTheme.colors.surface),
+                        .placeholder(visible = loading, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f)),
                 )
             }
         }

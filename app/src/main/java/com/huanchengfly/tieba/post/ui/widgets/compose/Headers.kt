@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eygraber.compose.placeholder.PlaceholderHighlight
-import com.eygraber.compose.placeholder.material.fade
+import com.eygraber.compose.placeholder.material.shimmer
 import com.eygraber.compose.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 
@@ -39,8 +39,8 @@ fun UserHeaderPlaceholder(
                 text = "Username",
                 modifier = Modifier.placeholder(
                     visible = true,
-                    color = MaterialTheme.colors.surface,
-                    highlight = PlaceholderHighlight.fade(),
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f),
+                    highlight = PlaceholderHighlight.shimmer(),
                 )
             )
         },
@@ -49,8 +49,8 @@ fun UserHeaderPlaceholder(
                 text = "Desc",
                 modifier = Modifier.placeholder(
                     visible = true,
-                    color = MaterialTheme.colors.surface,
-                    highlight = PlaceholderHighlight.fade(),
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f),
+                    highlight = PlaceholderHighlight.shimmer(),
                 )
             )
         }

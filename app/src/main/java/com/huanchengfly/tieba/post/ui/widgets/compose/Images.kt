@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -13,9 +14,15 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BrokenImage
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -258,6 +265,9 @@ fun NetworkImage(
     }
 
     val state = rememberAsyncImageState()
+    val showImagePlaceholder by remember {
+        derivedStateOf { state.result !is DisplayResult.Success }
+    }
     val imageAspectRatio by remember {
         derivedStateOf {
             with(state.result) {
@@ -314,6 +324,25 @@ fun NetworkImage(
             }
             .then(modifier)
     ) {
+        if (showImagePlaceholder) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(MaterialTheme.colors.onSurface.copy(alpha = 0.06f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (state.result is DisplayResult.Error) {
+                        Icons.Rounded.BrokenImage
+                    } else {
+                        Icons.Rounded.Image
+                    },
+                    contentDescription = null,
+                    tint = MaterialTheme.colors.onSurface.copy(alpha = 0.24f),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
         AsyncImage(
             request = request,
             modifier = Modifier

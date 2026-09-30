@@ -319,12 +319,12 @@ private fun BlockItemPlaceholder() {
         Icon(
             imageVector = Icons.Outlined.Block,
             contentDescription = null,
-            modifier = Modifier.placeholder(visible = true, color = MaterialTheme.colors.surface)
+            modifier = Modifier.placeholder(visible = true, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = stringResource(id = R.string.title_block_settings),
-            modifier = Modifier.placeholder(visible = true, color = MaterialTheme.colors.surface)
+            modifier = Modifier.placeholder(visible = true, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
         )
     }
 }

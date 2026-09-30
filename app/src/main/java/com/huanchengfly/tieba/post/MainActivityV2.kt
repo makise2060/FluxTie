@@ -16,9 +16,17 @@ import android.os.Looper
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -575,10 +583,10 @@ class MainActivityV2 : BaseComposeActivity() {
 }
 
 private object TiebaNavHostDefaults {
-    private val AnimationSpec = spring(
-        stiffness = Spring.StiffnessMediumLow,
-        visibilityThreshold = IntOffset.VisibilityThreshold
-    )
+    // M3 Shared Axis X:短位移 + 淡化,固定时长,弃用全宽低刚度弹簧
+    private val SlideSpec = tween<IntOffset>(300, easing = FastOutSlowInEasing)
+    private val FadeInSpec = tween<Float>(240, delayMillis = 60, easing = LinearOutSlowInEasing)
+    private val FadeOutSpec = tween<Float>(120, easing = FastOutLinearInEasing)
 
     @Composable
     @OptIn(ExperimentalMaterialApi::class, ExperimentalAnimationApi::class)
@@ -586,32 +594,16 @@ private object TiebaNavHostDefaults {
         navHostContentAlignment = Alignment.TopStart,
         rootDefaultAnimations = RootNavGraphDefaultAnimations(
             enterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Start,
-                    animationSpec = AnimationSpec,
-                    initialOffset = { it }
-                )
+                slideInHorizontally(SlideSpec) { it / 4 } + fadeIn(FadeInSpec)
             },
             exitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.End,
-                    animationSpec = AnimationSpec,
-                    targetOffset = { -it }
-                )
+                slideOutHorizontally(SlideSpec) { -it / 6 } + fadeOut(FadeOutSpec)
             },
             popEnterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Start,
-                    animationSpec = AnimationSpec,
-                    initialOffset = { -it }
-                )
+                slideInHorizontally(SlideSpec) { -it / 6 } + fadeIn(FadeInSpec)
             },
             popExitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.End,
-                    animationSpec = AnimationSpec,
-                    targetOffset = { it }
-                )
+                slideOutHorizontally(SlideSpec) { it / 4 } + fadeOut(FadeOutSpec)
             },
         ),
     )
@@ -619,7 +611,7 @@ private object TiebaNavHostDefaults {
     @OptIn(ExperimentalMaterialApi::class)
     @Composable
     fun rememberBottomSheetNavigator(): BottomSheetNavigator = rememberBottomSheetNavigator(
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = spring(dampingRatio = 1f, stiffness = 500f),
         skipHalfExpanded = true
     )
 }

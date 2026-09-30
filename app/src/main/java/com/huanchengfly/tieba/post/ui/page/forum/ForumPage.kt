@@ -80,7 +80,7 @@ import androidx.compose.ui.util.fastForEach
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.eygraber.compose.placeholder.PlaceholderHighlight
-import com.eygraber.compose.placeholder.material.fade
+import com.eygraber.compose.placeholder.material.shimmer
 import com.eygraber.compose.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.frsPage.ForumInfo
@@ -199,8 +199,8 @@ private fun ForumHeaderPlaceholder(
                         .clip(RoundedCornerShape(100))
                         .placeholder(
                             visible = true,
-                            color = MaterialTheme.colors.surface,
-                            highlight = PlaceholderHighlight.fade(),
+                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f),
+                            highlight = PlaceholderHighlight.shimmer(),
                         )
                         .padding(horizontal = 18.dp, vertical = 6.dp)
                 ) {
@@ -1078,7 +1078,10 @@ fun LoadingPlaceholder(
             )
         }
     ) { contentPadding ->
-        Column(modifier = Modifier.padding(contentPadding)) {
+        Column(
+            modifier = Modifier.padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             ForumHeaderPlaceholder(
                 forumName = forumName,
                 modifier = Modifier
@@ -1100,8 +1103,8 @@ fun LoadingPlaceholder(
                             text = it,
                             modifier = Modifier.placeholder(
                                 visible = true,
-                                color = MaterialTheme.colors.surface,
-                                highlight = PlaceholderHighlight.fade(),
+                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f),
+                                highlight = PlaceholderHighlight.shimmer(),
                             ),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,

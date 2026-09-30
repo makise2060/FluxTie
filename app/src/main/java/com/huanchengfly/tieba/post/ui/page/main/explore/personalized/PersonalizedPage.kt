@@ -2,6 +2,10 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.personalized
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
@@ -42,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
@@ -246,8 +251,10 @@ fun PersonalizedPage(
 
             AnimatedVisibility(
                 visible = showRefreshTip,
-                enter = fadeIn() + slideInVertically(),
-                exit = slideOutVertically() + fadeOut(),
+                enter = fadeIn(tween(200, easing = LinearOutSlowInEasing)) +
+                        slideInVertically(tween(250, easing = FastOutSlowInEasing)) { -it / 2 },
+                exit = fadeOut(tween(150, easing = FastOutLinearInEasing)) +
+                        slideOutVertically(tween(200, easing = FastOutSlowInEasing)) { -it / 2 },
                 modifier = Modifier.align(Alignment.TopCenter)
             ) {
                 RefreshTip(refreshCount = refreshCount)
@@ -261,6 +268,7 @@ private fun BoxScope.RefreshTip(refreshCount: Int) {
     Box(
         modifier = Modifier
             .padding(top = 72.dp)
+            .shadow(2.dp, RoundedCornerShape(100))
             .clip(RoundedCornerShape(100))
             .background(
                 color = ExtendedTheme.colors.primary,

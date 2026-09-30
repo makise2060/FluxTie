@@ -71,7 +71,6 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
-import com.eygraber.compose.placeholder.material.placeholder
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
@@ -81,6 +80,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
+import com.huanchengfly.tieba.post.ui.page.main.LocalMainBottomInsets
 import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
@@ -186,66 +186,6 @@ private fun Header(
             .then(modifier),
         invertColor = invert
     )
-}
-
-@Composable
-private fun ForumItemPlaceholder(
-    showAvatar: Boolean,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
-        if (showAvatar) {
-            Image(
-                painter = rememberDrawablePainter(
-                    drawable = ImageUtil.getPlaceHolder(
-                        LocalContext.current,
-                        0
-                    )
-                ),
-                contentDescription = null,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .size(40.dp)
-                    .align(CenterVertically)
-                    .placeholder(visible = true, color = ExtendedTheme.colors.chip),
-            )
-            Spacer(modifier = Modifier.width(14.dp))
-        }
-        Text(
-            color = ExtendedTheme.colors.text,
-            text = "",
-            modifier = Modifier
-                .weight(1f)
-                .align(CenterVertically)
-                .placeholder(visible = true, color = ExtendedTheme.colors.chip),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Box(
-            modifier = Modifier
-                .width(54.dp)
-                .background(
-                    color = ExtendedTheme.colors.chip,
-                    shape = RoundedCornerShape(3.dp)
-                )
-                .padding(vertical = 4.dp)
-                .align(CenterVertically)
-                .placeholder(visible = true, color = ExtendedTheme.colors.chip)
-        ) {
-            Text(
-                text = "0",
-                color = ExtendedTheme.colors.onChip,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Center)
-            )
-        }
-    }
 }
 
 @Composable
@@ -466,8 +406,10 @@ fun HomePage(
     val isError by remember { derivedStateOf { error != null } }
     val gridCells by remember { derivedStateOf { getGridCells(context, listSingle) } }
 
-    LaunchedEffect(isLoading) {
-        if (!isLoading) {
+    LaunchedEffect(isLoading, hasLoaded) {
+        // 登录用户等首屏数据真正就绪再让启动屏退场(冷启动 isLoading 初始为 false,勿按首帧误判);
+        // 未登录无加载流程,直接就绪
+        if (!isLoading && (hasLoaded || !isLoggedIn)) {
             com.huanchengfly.tieba.post.ui.widgets.compose.SplashState.markReady()
         }
     }
@@ -558,16 +500,13 @@ fun HomePage(
                             onOpenExplore = onOpenExplore
                         )
                     },
-                    loadingScreen = {
-                        HomePageSkeletonScreen(listSingle = listSingle, gridCells = gridCells)
-                    },
                     errorScreen = {
                         error?.let { ErrorScreen(error = it) }
                     }
                 ) {
                     MyLazyVerticalGrid(
                         columns = gridCells,
-                        contentPadding = PaddingValues(bottom = 12.dp),
+                        contentPadding = PaddingValues(bottom = 12.dp + LocalMainBottomInsets.current),
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         if (showHistoryForum) {
@@ -735,62 +674,6 @@ fun HomePage(
                 backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
                 contentColor = ExtendedTheme.colors.onPrimary,
             )
-        }
-    }
-}
-
-@Composable
-private fun HomePageSkeletonScreen(
-    listSingle: Boolean,
-    gridCells: GridCells
-) {
-    MyLazyVerticalGrid(
-        columns = gridCells,
-        contentPadding = PaddingValues(bottom = 12.dp),
-        modifier = Modifier
-            .fillMaxSize(),
-    ) {
-        item(key = "TopForumHeaderPlaceholder", span = { GridItemSpan(maxLineSpan) }) {
-            Column(
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                Header(
-                    text = stringResource(id = R.string.title_top_forum),
-                    modifier = Modifier.placeholder(
-                        visible = true,
-                        color = ExtendedTheme.colors.chip
-                    ),
-                    invert = true
-                )
-            }
-        }
-        items(6, key = { "TopPlaceholder$it" }) {
-            ForumItemPlaceholder(listSingle)
-        }
-        item(
-            key = "Spacer",
-            span = { GridItemSpan(maxLineSpan) }) {
-            Spacer(
-                modifier = Modifier.height(
-                    16.dp
-                )
-            )
-        }
-        item(key = "ForumHeaderPlaceholder", span = { GridItemSpan(maxLineSpan) }) {
-            Column {
-                Header(
-                    text = stringResource(id = R.string.forum_list_title),
-                    modifier = Modifier.placeholder(
-                        visible = true,
-                        color = ExtendedTheme.colors.chip
-                    ),
-                    invert = true
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
-        items(12, key = { "Placeholder$it" }) {
-            ForumItemPlaceholder(listSingle)
         }
     }
 }

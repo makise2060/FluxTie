@@ -1,9 +1,24 @@
 package com.huanchengfly.tieba.post.ui.page.settings.habit
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.RadioButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
@@ -21,26 +36,35 @@ import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.R
+import androidx.datastore.preferences.core.intPreferencesKey
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.ui.common.prefs.PrefsScreen
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPref
-import com.huanchengfly.tieba.post.ui.common.prefs.widgets.ListPrefInt
 import com.huanchengfly.tieba.post.ui.common.prefs.widgets.SwitchPref
 import com.huanchengfly.tieba.post.ui.page.settings.LeadingIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.AvatarIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.isPhotoPickerAvailable
 import com.ramcosta.composedestinations.annotation.Destination
@@ -181,26 +205,7 @@ fun HabitSettingsPage(
                 )
             }
             prefsItem {
-                ListPrefInt(
-                    key = "defaultStart",
-                    title = stringResource(id = R.string.settings_default_start),
-                    defaultValue = 0,
-                    leadingIcon = {
-                        LeadingIcon {
-                            AvatarIcon(
-                                icon = Icons.Default.TabletAndroid,
-                                size = Sizes.Small,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                    useSelectedAsSummary = true,
-                    entries = mapOf(
-                        0 to stringResource(id = R.string.title_main),
-                        1 to stringResource(id = R.string.title_explore),
-                        2 to stringResource(id = R.string.title_notifications)
-                    )
-                )
+                StartPageSelector()
             }
             prefsItem {
                 SwitchPref(
@@ -374,5 +379,250 @@ fun HabitSettingsPage(
                 )
             }
         }
+    }
+}
+
+
+/**
+ * 启动首选页:迷你骨架屏预览式单选项(首页 / 动态页)。
+ * 两个选项以缩小版页面骨架呈现,点选即写入 defaultStart(0=首页,1=动态页)。
+ */
+@Composable
+private fun StartPageSelector() {
+    val hapticFeedback = LocalHapticFeedback.current
+    var startPage by rememberPreferenceAsMutableState(
+        key = intPreferencesKey("defaultStart"),
+        defaultValue = 0
+    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+    ) {
+        Text(
+            text = stringResource(id = R.string.settings_default_start),
+            style = MaterialTheme.typography.body1,
+            color = ExtendedTheme.colors.text,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StartPageOption(
+                title = stringResource(id = R.string.title_main),
+                selected = startPage == 0,
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    startPage = 0
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                MiniHomePreview()
+            }
+            StartPageOption(
+                title = stringResource(id = R.string.title_explore),
+                selected = startPage == 1,
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    startPage = 1
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                MiniExplorePreview()
+            }
+        }
+    }
+}
+
+@Composable
+private fun StartPageOption(
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    preview: @Composable () -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(ExtendedTheme.colors.card)
+            .border(
+                width = if (selected) 1.5.dp else 0.5.dp,
+                color = if (selected) ExtendedTheme.colors.primary
+                else ExtendedTheme.colors.divider.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(10.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(112.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colors.background)
+        ) {
+            preview()
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            RadioButton(selected = selected, onClick = null)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.body2,
+                color = if (selected) ExtendedTheme.colors.text else ExtendedTheme.colors.textSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun MiniSkeletonBar(
+    height: Dp,
+    modifier: Modifier = Modifier,
+    widthFraction: Float? = null,
+    width: Dp? = null,
+    color: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f),
+) {
+    val base = if (widthFraction != null) modifier.fillMaxWidth(widthFraction) else modifier
+    Box(
+        modifier = base
+            .then(if (width != null) Modifier.width(width) else Modifier)
+            .height(height)
+            .clip(RoundedCornerShape(height / 2))
+            .background(color)
+    )
+}
+
+/** 首页缩小版骨架:工具栏 + 搜索条 + chips 行 + 两列吧列表 */
+@Composable
+private fun MiniHomePreview() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            MiniSkeletonBar(width = 26.dp, height = 5.dp)
+        }
+        MiniSkeletonBar(
+            height = 9.dp,
+            modifier = Modifier.fillMaxWidth(),
+            color = ExtendedTheme.colors.chip
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            repeat(3) {
+                MiniSkeletonBar(width = 18.dp, height = 6.dp)
+            }
+        }
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                repeat(3) { MiniForumRow() }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                repeat(3) { MiniForumRow() }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MiniForumRow() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            MiniSkeletonBar(height = 4.dp, widthFraction = 0.7f)
+            MiniSkeletonBar(height = 3.dp, widthFraction = 0.45f)
+        }
+    }
+}
+
+/** 动态页缩小版骨架:顶栏 + 三 Tab 行(首 Tab 主题色)+ 两张 Feed 卡 */
+@Composable
+private fun MiniExplorePreview() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            MiniSkeletonBar(width = 24.dp, height = 5.dp)
+            Spacer(modifier = Modifier.weight(1f))
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            MiniSkeletonBar(width = 14.dp, height = 4.dp, color = ExtendedTheme.colors.primary)
+            MiniSkeletonBar(width = 14.dp, height = 4.dp)
+            MiniSkeletonBar(width = 14.dp, height = 4.dp)
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(2) { MiniFeedCard() }
+        }
+    }
+}
+
+@Composable
+private fun MiniFeedCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colors.onSurface.copy(alpha = 0.04f))
+            .padding(6.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
+            )
+            MiniSkeletonBar(width = 24.dp, height = 3.dp)
+        }
+        MiniSkeletonBar(height = 3.dp, widthFraction = 0.85f)
+        MiniSkeletonBar(height = 22.dp, modifier = Modifier.fillMaxWidth())
     }
 }

@@ -17,6 +17,16 @@ val ExtendedColors.loadMoreIndicator: Color
         indicator
     }
 
+/** 加载更多指示器的文字色:与底色配对(indicator 为 primary 时用 onPrimary,否则常规文字色) */
+val ExtendedColors.loadMoreIndicatorContent: Color
+    get() = if (ThemeUtil.isTranslucentTheme(theme)) {
+        text
+    } else if (indicator == primary) {
+        onPrimary
+    } else {
+        text
+    }
+
 val ExtendedColors.threadBottomBar: Color
     get() = if (ThemeUtil.isTranslucentTheme(theme)) {
         windowBackground

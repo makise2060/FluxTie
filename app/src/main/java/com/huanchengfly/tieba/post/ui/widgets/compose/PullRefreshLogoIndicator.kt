@@ -9,7 +9,11 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshState
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -38,7 +42,14 @@ fun PullRefreshLogoIndicator(
     contentColor: Color = Color.Black,
 ) {
     val progress = state.progress
-    if (progress <= 0f && !refreshing) return
+    // 仅手势下拉过的刷新才展开指示器;程序性刷新(进页预载/静默刷新)不显示,
+    // 避免进入页面时顶部凭空悬一只刷新圆
+    var gesturePulled by remember { mutableStateOf(false) }
+    LaunchedEffect(progress, refreshing) {
+        if (progress > 0f) gesturePulled = true
+        else if (!refreshing) gesturePulled = false
+    }
+    if (progress <= 0f && (!refreshing || !gesturePulled)) return
 
     val transition = rememberInfiniteTransition(label = "pullArc")
     val spin by transition.animateFloat(

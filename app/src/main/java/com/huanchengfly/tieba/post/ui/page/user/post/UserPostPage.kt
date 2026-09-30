@@ -138,7 +138,10 @@ fun UserPostPage(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.TopCenter
             ) {
-                Column {
+                Column(
+                    modifier = Modifier.padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     repeat(4) {
                         FeedCardPlaceholder()
                     }
@@ -303,7 +306,10 @@ private fun UserPostList(
     onClickForum: (name: String) -> Unit = {},
     onClickOriginThread: (threadId: Long) -> Unit = {},
 ) {
-    MyLazyColumn(state = lazyListState) {
+    MyLazyColumn(
+        state = lazyListState,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         items(
             items = data,
             key = {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
@@ -66,7 +67,6 @@ import com.huanchengfly.tieba.post.ui.page.thread.UserNameText
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
-import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
@@ -76,11 +76,11 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.debounceClickable
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.SubPostsSkeleton
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
@@ -297,7 +297,8 @@ internal fun SubPostsContent(
         modifier = Modifier.fillMaxSize(),
         isEmpty = subPosts.isEmpty(),
         isError = false,
-        isLoading = isRefreshing
+        isLoading = isRefreshing,
+        loadingScreen = { SubPostsSkeleton() }
     ) {
         MyScaffold(
             modifier = Modifier.fillMaxSize(),
@@ -415,6 +416,7 @@ internal fun SubPostsContent(
         ) { paddingValues ->
             LoadMoreLayout(
                 modifier = Modifier.padding(paddingValues),
+                indicatorBottomInset = paddingValues.calculateBottomPadding(),
                 isLoading = isLoading,
                 onLoadMore = {
                     viewModel.send(
@@ -480,7 +482,6 @@ internal fun SubPostsContent(
                                     deleteSubPost = null
                                     confirmDeleteDialogState.show()
                                 }
-                                VerticalDivider(thickness = 2.dp)
                             }
                         }
                     }
@@ -503,7 +504,7 @@ internal fun SubPostsContent(
                     itemsIndexed(
                         items = subPosts,
                         key = { _, subPost -> subPost.id }
-                    ) { _, item ->
+                    ) { index, item ->
                         SubPostItem(
                             item = item,
                             canDelete = { it.author_id == account?.uid?.toLongOrNull() || it.author?.id == account?.uid?.toLongOrNull() || thread?.get { author?.id } ==  account?.uid?.toLongOrNull() },
@@ -552,6 +553,16 @@ internal fun SubPostsContent(
                                 confirmDeleteDialogState.show()
                             },
                         )
+                        if (index < subPosts.lastIndex) {
+                            // 扁平列表用发丝线分隔:高密度,替代卡片分块
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp)
+                                    .height(0.5.dp)
+                                    .background(ExtendedTheme.colors.divider.copy(alpha = 0.6f))
+                            )
+                        }
                     }
                 }
             }
@@ -565,7 +576,7 @@ private fun getDescText(
 ): String {
     val texts = listOfNotNull(
         time?.let { DateTimeUtils.getRelativeTimeString(App.INSTANCE, it) },
-        ipAddress?.let { App.INSTANCE.getString(R.string.text_ip_location, it) }
+        ipAddress?.takeIf { it.isNotBlank() }?.let { App.INSTANCE.getString(R.string.text_ip_location, it) }
     )
     if (texts.isEmpty()) return ""
     return texts.joinToString(" ")
@@ -655,59 +666,60 @@ private fun SubPostItem(
             },
             onClick = { onReplyClick(subPost.get()) }.takeUnless { context.appPreferences.hideReply || account == null }
         ) {
-            Card(
-                header = {
-                    if (author != null) {
-                        UserHeader(
-                            avatar = {
-                                Avatar(
-                                    data = StringUtil.getAvatarUrl(author.get { portrait }),
-                                    size = Sizes.Small,
-                                    contentDescription = null
-                                )
-                            },
-                            name = {
-                                UserNameText(
-                                    userName = StringUtil.getUsernameAnnotatedString(
-                                        LocalContext.current,
-                                        author.get { name },
-                                        author.get { nameShow }
-                                    ),
-                                    userLevel = author.get { level_id },
-                                    isLz = author.get { id } == threadAuthorId,
-                                    bawuType = author.get { bawuType },
-                                )
-                            },
-                            desc = {
-                                Text(
-                                    text = getDescText(
-                                        subPost.get { time }.toLong(),
-                                        author.get { ip_address })
-                                )
-                            },
-                            onClick = {
-                                onUserClick(author.get())
-                            }
-                        ) {
-                            PostAgreeBtn(
-                                hasAgreed = hasAgreed,
-                                agreeNum = agreeNum,
-                                onClick = { onAgree(subPost.get()) }
+            // 扁平回复行:无卡片底,发丝线分隔(由列表项之间绘制),高密度对话流
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                author?.let {
+                    UserHeader(
+                        avatar = {
+                            Avatar(
+                                data = StringUtil.getAvatarUrl(it.get { portrait }),
+                                size = Sizes.Small,
+                                contentDescription = null
                             )
+                        },
+                        name = {
+                            UserNameText(
+                                userName = StringUtil.getUsernameAnnotatedString(
+                                    LocalContext.current,
+                                    it.get { name },
+                                    it.get { nameShow }
+                                ),
+                                userLevel = it.get { level_id },
+                                isLz = it.get { id } == threadAuthorId,
+                                bawuType = it.get { bawuType },
+                            )
+                        },
+                        desc = {
+                            Text(
+                                text = getDescText(
+                                    subPost.get { time }.toLong(),
+                                    it.get { ip_address })
+                            )
+                        },
+                        onClick = {
+                            onUserClick(it.get())
                         }
-                    }
-                },
-                content = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier
-                            .padding(start = Sizes.Small + 8.dp)
-                            .fillMaxWidth()
                     ) {
-                        contentRenders.fastForEach { it.Render() }
+                        PostAgreeBtn(
+                            hasAgreed = hasAgreed,
+                            agreeNum = agreeNum,
+                            onClick = { onAgree(subPost.get()) }
+                        )
                     }
                 }
-            )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .padding(top = 8.dp, start = Sizes.Small + 8.dp)
+                        .fillMaxWidth()
+                ) {
+                    contentRenders.fastForEach { it.Render() }
+                }
+            }
         }
     }
 }

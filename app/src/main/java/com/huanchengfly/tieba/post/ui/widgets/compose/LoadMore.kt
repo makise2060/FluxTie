@@ -39,6 +39,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -74,9 +75,12 @@ fun LoadMoreLayout(
     lazyListState: LazyListState? = null,
     isEmpty: Boolean = lazyListState?.layoutInfo?.totalItemsCount == 0,
     preloadCount: Int = 3,
+    // 指示器滑动区间整体上移量:页面内容区下方有 bottomBar 时传入其高度,避免胶囊被底栏遮挡
+    indicatorBottomInset: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
     val loadDistance = with(LocalDensity.current) { LoadDistance.toPx() }
+    val indicatorInsetPx = with(LocalDensity.current) { indicatorBottomInset.toPx() }
 
     val curOnLoadMore by rememberUpdatedState(newValue = onLoadMore)
     var lastTriggerTime by remember { mutableLongStateOf(0L) }
@@ -169,7 +173,9 @@ fun LoadMoreLayout(
 
         Box(modifier = Modifier
             .align(Alignment.BottomCenter)
-            .offset { IntOffset(0, swipeableState.offset.value.roundToInt()) }
+            .offset {
+                IntOffset(0, (swipeableState.offset.value - indicatorInsetPx).roundToInt())
+            }
         ) {
             if (enableLoadMore && swipeableState.offset.value != loadDistance) {
                 indicator(isLoading, loadEnd, swipeableState.targetValue)

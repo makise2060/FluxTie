@@ -128,6 +128,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipBackground
 import com.huanchengfly.tieba.post.ui.common.theme.compose.invertChipContent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.loadMoreIndicator
+import com.huanchengfly.tieba.post.ui.common.theme.compose.loadMoreIndicatorContent
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.common.theme.compose.threadBottomBar
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
@@ -138,6 +139,10 @@ import com.huanchengfly.tieba.post.ui.page.destinations.ReplyPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsSheetPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
+import com.huanchengfly.tieba.post.ui.widgets.compose.AgreeHeart
+import com.huanchengfly.tieba.post.ui.widgets.compose.RollingCount
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullRefreshLogoIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -170,7 +175,9 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.buildChipInlineContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.debounceClickable
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.PostSkeletonCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.ui.widgets.compose.states.ThreadPageSkeleton
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.DateTimeUtils.getRelativeTimeString
 import com.huanchengfly.tieba.post.utils.HistoryUtil
@@ -216,36 +223,45 @@ fun PostAgreeBtn(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     val animatedColor by animateColorAsState(
         targetValue = if (hasAgreed) ExtendedTheme.colors.accent else ExtendedTheme.colors.textSecondary,
         label = "postAgreeBtnColor"
     )
+    val interactionSource = remember { MutableInteractionSource() }
     Button(
-        onClick = onClick,
+        onClick = {
+            if (!hasAgreed) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            } else {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
+            onClick()
+        },
         shape = RoundedCornerShape(4.dp),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.background,
             contentColor = animatedColor
         ),
+        interactionSource = interactionSource,
         modifier = modifier
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Icon(
-                imageVector = if (hasAgreed) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                contentDescription = stringResource(id = R.string.title_agree),
+            AgreeHeart(
+                hasAgree = hasAgreed,
                 tint = animatedColor,
-                modifier = Modifier.size(16.dp)
+                iconSize = 16.dp,
+                interactionSource = interactionSource
             )
             if (agreeNum > 0) {
-                Text(
+                RollingCount(
                     text = agreeNum.getShortNumString(),
                     color = animatedColor,
-                    style = MaterialTheme.typography.caption,
-                    textAlign = TextAlign.Center
+                    style = MaterialTheme.typography.caption.copy(textAlign = TextAlign.Center)
                 )
             }
         }
@@ -259,34 +275,43 @@ private fun BottomBarAgreeBtn(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     val color = if (hasAgreed) ExtendedTheme.colors.accent else ExtendedTheme.colors.textSecondary
     val animatedColor by animateColorAsState(color, label = "agreeBtnColor")
+    val interactionSource = remember { MutableInteractionSource() }
 
     Button(
-        onClick = onClick,
+        onClick = {
+            if (!hasAgreed) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            } else {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
+            onClick()
+        },
         shape = RoundedCornerShape(0),
         contentPadding = PaddingValues(horizontal = 4.dp),
         colors = ButtonDefaults.buttonColors(
             backgroundColor = ExtendedTheme.colors.bottomBar,
             contentColor = animatedColor
         ),
+        interactionSource = interactionSource,
         modifier = modifier
     ) {
         Row(
             modifier = Modifier.align(Alignment.CenterVertically),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = if (hasAgreed) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                contentDescription = stringResource(id = R.string.title_agree),
-                tint = animatedColor
+            AgreeHeart(
+                hasAgree = hasAgreed,
+                tint = animatedColor,
+                interactionSource = interactionSource
             )
             if (agreeNum > 0) {
-                Text(
+                RollingCount(
                     text = agreeNum.getShortNumString(),
-                    style = MaterialTheme.typography.caption,
                     color = animatedColor,
-                    fontSize = 12.sp
+                    style = MaterialTheme.typography.caption.copy(fontSize = 12.sp)
                 )
             }
         }
@@ -427,7 +452,7 @@ private fun ThreadLoadMoreIndicator(
         elevation = 8.dp,
         shape = RoundedCornerShape(100),
         color = ExtendedTheme.colors.loadMoreIndicator,
-        contentColor = ExtendedTheme.colors.text
+        contentColor = ExtendedTheme.colors.loadMoreIndicatorContent
     ) {
         Row(
             modifier = Modifier
@@ -1283,6 +1308,7 @@ fun ThreadPage(
             isEmpty = isEmpty,
             isError = isError,
             isLoading = isRefreshing,
+            loadingScreen = { ThreadPageSkeleton() },
             errorScreen = {
                 error?.let {
                     val (e) = it
@@ -1528,9 +1554,11 @@ fun ThreadPage(
                             lazyListState = lazyListState,
                             isEmpty = data.isEmpty(),
                             preloadCount = loadMorePreloadCount,
+                            indicatorBottomInset = paddingValues.calculateBottomPadding(),
                         ) {
                             MyLazyColumn(
                                 state = lazyListState,
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 item(key = "FirstPost") {
@@ -1619,12 +1647,6 @@ fun ThreadPage(
                                                         }
                                                     )
                                                 }
-                                                VerticalDivider(
-                                                    modifier = Modifier
-                                                        .padding(horizontal = 16.dp)
-                                                        .padding(bottom = 8.dp),
-                                                    thickness = 2.dp
-                                                )
                                             }
                                         }
                                     }
@@ -1803,6 +1825,20 @@ fun ThreadPage(
                                                     color = ExtendedTheme.colors.text,
                                                     fontSize = 14.sp
                                                 )
+                                            }
+                                        }
+                                    }
+                                }
+                                if (isRefreshing && data.isEmpty()) {
+                                    // 主贴已渲染但回复未达的中间态:回复区放楼层骨架,不留空白
+                                    item(key = "FloorSkeletons") {
+                                        Container {
+                                            Column(
+                                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                repeat(3) {
+                                                    PostSkeletonCard()
+                                                }
                                             }
                                         }
                                     }

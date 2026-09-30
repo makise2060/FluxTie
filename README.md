@@ -24,11 +24,11 @@
 
 ## 📸 预览
 
-| 外观设置 | 配色风格 | 主题色彩 |
+| 启动屏 | 动态页 | 帖子页 |
 |:---:|:---:|:---:|
-| <img src="docs/images/preview_appearance.png" width="240" /> | <img src="docs/images/preview_variants.png" width="240" /> | <img src="docs/images/preview_seed.png" width="240" /> |
-| **悬浮底栏** | **动态页** | **应用日志** |
-| <img src="docs/images/preview_nav.png" width="240" /> | <img src="docs/images/preview_explore.png" width="240" /> | <img src="docs/images/preview_logs.png" width="240" /> |
+| <img src="docs/images/preview_splash.png" width="240" /> | <img src="docs/images/preview_explore.png" width="240" /> | <img src="docs/images/preview_thread.png" width="240" /> |
+| **我** | **设置** | **主题配色** |
+| <img src="docs/images/preview_user.png" width="240" /> | <img src="docs/images/preview_settings.png" width="240" /> | <img src="docs/images/preview_appearance.png" width="240" /> |
 
 ## ✨ 特性
 

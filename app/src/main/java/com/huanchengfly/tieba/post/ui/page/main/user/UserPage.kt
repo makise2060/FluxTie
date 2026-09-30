@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.eygraber.compose.placeholder.material.placeholder
 import com.github.panpf.sketch.compose.AsyncImage
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.api.ClientVersion
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.Account
@@ -421,7 +422,7 @@ fun UserPage(
                             onClick = {
                                 navigator.navigate(
                                     WebViewPageDestination(
-                                        initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${'$'}{CuidUtils.getNewCuid()}&cuid_galaxy2=${'$'}{CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${'$'}{System.currentTimeMillis()}&_client_version=12.52.1.0&nohead=1"
+                                        initialUrl = "https://tieba.baidu.com/mo/q/hybrid-main-service/uegServiceCenter?cuid=${'$'}{CuidUtils.getNewCuid()}&cuid_galaxy2=${'$'}{CuidUtils.getNewCuid()}&cuid_gid=&timestamp=${'$'}{System.currentTimeMillis()}&_client_version=${ClientVersion.TIEBA_V12.version}&nohead=1"
                                     )
                                 )
                             }

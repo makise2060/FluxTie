@@ -1,8 +1,8 @@
 package com.huanchengfly.tieba.post.repository
 
 import com.huanchengfly.tieba.post.api.TiebaApi
-import com.huanchengfly.tieba.post.api.models.AddThreadBean
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
+import com.huanchengfly.tieba.post.api.models.protos.addThread.AddThreadResponse
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import kotlinx.coroutines.GlobalScope
@@ -18,7 +18,7 @@ object AddPostRepository {
         title: String? = "",
         isHide: Int? = 1,
         isTitle: Int? = 1
-    ): Flow<AddThreadBean> =
+    ): Flow<AddThreadResponse> =
         TiebaApi.getInstance()
             .addThreadFlow(
                 content,
@@ -28,14 +28,15 @@ object AddPostRepository {
                 requireNotNull(isHide),
                 requireNotNull(isTitle)
             ).onEach {
+                val data = it.data_ ?: return@onEach
                 GlobalScope.launch {
-                    emitGlobalEvent(
-                        GlobalEvent.AddThreadSuccess(
-                            checkNotNull(it.tid?.toLong()),
-                            checkNotNull(it.pid?.toLong()),
-                            checkNotNull(it.errorMsg),
-                        )
-                    )
+                    val threadId = data.tid.toLongOrNull() ?: return@launch
+                    val postId = data.pid.toLongOrNull() ?: return@launch
+                    val msg = data.toast?.content
+                        ?.joinToString("") { it.text }
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: data.msg
+                    emitGlobalEvent(GlobalEvent.AddThreadSuccess(threadId, postId, msg))
                 }
             }
 

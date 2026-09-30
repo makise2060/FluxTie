@@ -7,6 +7,7 @@ import com.huanchengfly.tieba.post.api.models.*
 import com.huanchengfly.tieba.post.api.models.protos.GeneralTabList.GeneralTabListResponse
 import com.huanchengfly.tieba.post.api.models.protos.addPost.AddPostResponse
 import com.huanchengfly.tieba.post.api.models.protos.addPollPost.AddPollPostReponse
+import com.huanchengfly.tieba.post.api.models.protos.addThread.AddThreadResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumGuide.ForumGuideResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumRecommend.ForumRecommendResponse
 import com.huanchengfly.tieba.post.api.models.protos.forumRuleDetail.ForumRuleDetailResponse
@@ -1628,7 +1629,7 @@ interface ITiebaApi {
         title: String,
         isHide: Int,
         isTitle: Int,
-    ): Flow<AddThreadBean>
+    ): Flow<AddThreadResponse>
 
     /**
      * 禁止用户互动（转、评、赞踩、@）

@@ -56,6 +56,7 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.page.main.LocalMainBottomInsets
 import com.huanchengfly.tieba.post.ui.page.settings.custom.AppearanceCard
 import com.huanchengfly.tieba.post.ui.page.settings.custom.CardDivider
 import com.huanchengfly.tieba.post.ui.page.settings.custom.SettingRow
@@ -281,6 +282,7 @@ fun UserPage(
                 modifier = Modifier
                     .verticalScroll(state = rememberScrollState())
                     .fillMaxSize()
+                    .padding(bottom = LocalMainBottomInsets.current)
             ) {
                 if (account != null) {
                     // FluxDo 风格头部：左侧大标题用户名 + 签名，右侧大头像

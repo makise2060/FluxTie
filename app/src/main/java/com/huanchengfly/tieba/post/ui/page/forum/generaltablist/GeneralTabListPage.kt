@@ -3,13 +3,12 @@ package com.huanchengfly.tieba.post.ui.page.forum.generaltablist
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,7 +59,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.LocalSnackbarHostState
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
@@ -304,7 +302,11 @@ private fun ThreadList(
     MyLazyColumn(
         state = state,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(
+            top = 4.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         itemsIndexed(
@@ -329,7 +331,7 @@ private fun ThreadList(
                 blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                    .padding(vertical = 6.dp, horizontal = 10.dp),
             ) {
                 val (item) = holder
                 Column(
@@ -343,12 +345,6 @@ private fun ThreadList(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     } else {
-                        if (index > 0) {
-                            if (items[index - 1].thread.get { isTop } == 1) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                            VerticalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                        }
                         FeedCard(
                             item = holder,
                             onClick = onItemClicked,

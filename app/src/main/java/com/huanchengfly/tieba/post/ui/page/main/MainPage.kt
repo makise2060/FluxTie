@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.huanchengfly.tieba.post.LocalDevicePosture
@@ -279,6 +281,8 @@ fun MainPage(
         defaultValue = LocalContext.current.appPreferences.floatingBottomNav
     )
     val saveableStateHolder = rememberSaveableStateHolder()
+    // 真悬浮布局:胶囊叠于内容之上,内容 edge-to-edge;经典贴底/Rail 模式沿用 Scaffold 避让
+    val floatingLayout = navigationType == MainNavigationType.BOTTOM_NAVIGATION && floatingBottomNav
     ProvideNavigator(navigator = navigator) {
         NavigationWrapper(
             currentPosition = currentPosition,
@@ -288,20 +292,18 @@ fun MainPage(
             navigationType = navigationType,
             navigationContentPosition = navigationContentPosition
         ) {
-            MyScaffold(
-                backgroundColor = Color.Transparent,
-                modifier = Modifier.fillMaxSize(),
-                bottomBar = {
-                    AnimatedVisibility(visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION) {
-                        if (floatingBottomNav) {
-                            FloatingBottomNav(
-                                currentPosition = currentPosition,
-                                onChangePosition = onChangePosition,
-                                onReselected = onReselected,
-                                navigationItems = navigationItems,
-                                themeColors = themeColors,
-                            )
-                        } else {
+            CompositionLocalProvider(
+                LocalMainBottomInsets provides if (floatingLayout) MainBottomBreathing else 0.dp
+            ) {
+                MyScaffold(
+                    backgroundColor = Color.Transparent,
+                    modifier = Modifier.fillMaxSize(),
+                    // 悬浮模式:bottomBar 槽留空,M2 Scaffold 内容自然 edge-to-edge,
+                    // 底部由各列表的 LocalMainBottomInsets 呼吸位接管
+                    bottomBar = {
+                        AnimatedVisibility(
+                            visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION && !floatingBottomNav
+                        ) {
                             BottomNavigation(
                                 currentPosition = currentPosition,
                                 onChangePosition = onChangePosition,
@@ -311,20 +313,33 @@ fun MainPage(
                             )
                         }
                     }
-                }
-            ) { paddingValues ->
-                AnimatedContent(
-                    targetState = currentPosition,
-                    transitionSpec = {
-                        (fadeIn(tween(durationMillis = 220, delayMillis = 60, easing = EaseOutCubic)) togetherWith
-                                fadeOut(tween(durationMillis = 140, easing = EaseInCubic)))
-                    },
-                    label = "mainPageContent",
-                    modifier = Modifier.fillMaxSize(),
-                ) { page ->
-                    Box(modifier = Modifier.padding(paddingValues)) {
-                        saveableStateHolder.SaveableStateProvider(navigationItems[page].id) {
-                            navigationItems[page].content()
+                ) { paddingValues ->
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AnimatedContent(
+                            targetState = currentPosition,
+                            transitionSpec = {
+                                (fadeIn(tween(durationMillis = 220, delayMillis = 60, easing = EaseOutCubic)) togetherWith
+                                        fadeOut(tween(durationMillis = 140, easing = EaseInCubic)))
+                            },
+                            label = "mainPageContent",
+                            modifier = Modifier.fillMaxSize(),
+                        ) { page ->
+                            Box(modifier = Modifier.padding(paddingValues)) {
+                                saveableStateHolder.SaveableStateProvider(navigationItems[page].id) {
+                                    navigationItems[page].content()
+                                }
+                            }
+                        }
+                        if (floatingLayout) {
+                            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                                FloatingBottomNav(
+                                    currentPosition = currentPosition,
+                                    onChangePosition = onChangePosition,
+                                    onReselected = onReselected,
+                                    navigationItems = navigationItems,
+                                    themeColors = themeColors,
+                                )
+                            }
                         }
                     }
                 }

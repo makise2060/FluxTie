@@ -29,6 +29,7 @@ import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.main.LocalMainBottomInsets
 import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
@@ -98,7 +99,10 @@ fun NotificationsListPage(
             lazyListState = lazyListState,
         ) {
             MyLazyColumn(
-                contentPadding = PaddingValues(vertical = 4.dp),
+                contentPadding = PaddingValues(
+                    top = 4.dp,
+                    bottom = 4.dp + LocalMainBottomInsets.current
+                ),
                 state = lazyListState,
             ) {
                 items(

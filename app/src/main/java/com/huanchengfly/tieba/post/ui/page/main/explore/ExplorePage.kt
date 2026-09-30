@@ -1,10 +1,22 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -89,9 +101,22 @@ data class ExplorePageItem(
 @Composable
 private fun ColumnScope.ExplorePageTab(
     pagerState: PagerState,
-    pages: ImmutableList<ExplorePageItem>
+    pages: ImmutableList<ExplorePageItem>,
+    collapseFraction: Float,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    // 收起后压缩为“左图标右文字”紧凑形态，行高与宽度随收起进度平滑过渡
+    val compact = collapseFraction > 0.5f
+    val rowHeight by animateDpAsState(
+        targetValue = if (compact) 48.dp else 72.dp,
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "exploreTabRowHeight"
+    )
+    val tabWidth by animateDpAsState(
+        targetValue = if (compact) 96.dp else 76.dp,
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "exploreTabWidth"
+    )
 
     TabRow(
         selectedTabIndex = pagerState.currentPage,
@@ -101,30 +126,74 @@ private fun ColumnScope.ExplorePageTab(
                 tabPositions = tabPositions
             )
         },
-        divider = {},
+        divider = {
+            // 收起时浮现发丝线，强化“紧凑工具条”语义
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(0.5.dp)
+                    .background(
+                        color = ExtendedTheme.colors.onTopBar.copy(
+                            alpha = 0.08f * collapseFraction
+                        )
+                    )
+            )
+        },
         backgroundColor = Color.Transparent,
         contentColor = ExtendedTheme.colors.onTopBar,
         modifier = Modifier
             .align(Alignment.CenterHorizontally)
-            .width(76.dp * pages.size),
+            .width(tabWidth * pages.size),
     ) {
         pages.fastForEachIndexed { index, item ->
+            val selected = pagerState.currentPage == index
             Tab(
-                icon = {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                text = { item.name(pagerState.currentPage == index) },
-                selected = pagerState.currentPage == index,
+                selected = selected,
                 onClick = {
                     coroutineScope.launch {
                         if (pagerState.currentPage == index) {
                             emitGlobalEvent(GlobalEvent.Refresh(item.id))
                         } else {
                             pagerState.animateScrollToPage(index)
+                        }
+                    }
+                },
+                modifier = Modifier.height(rowHeight),
+                text = {
+                    AnimatedContent(
+                        targetState = compact,
+                        transitionSpec = {
+                            (fadeIn(tween(150, easing = LinearOutSlowInEasing)) +
+                                    scaleIn(
+                                        initialScale = 0.9f,
+                                        animationSpec = tween(180, easing = FastOutSlowInEasing)
+                                    )) togetherWith
+                                    fadeOut(tween(100, easing = FastOutLinearInEasing))
+                        },
+                        label = "exploreTabLayout"
+                    ) { isCompact ->
+                        if (isCompact) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                item.name(selected)
+                            }
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                item.name(selected)
+                            }
                         }
                     }
                 },
@@ -143,7 +212,12 @@ private fun TabText(
         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
         textAlign = TextAlign.Center
     )
-    Text(text = text, style = style)
+    Text(
+        text = text,
+        style = style,
+        maxLines = 1,
+        softWrap = false
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -190,6 +264,10 @@ fun ExplorePage() {
     var titleBarHeight by rememberSaveable {
         mutableFloatStateOf(with(density) { 56.dp.toPx() })
     }
+    // 标题栏收起进度 0(展开)→1(完全收起)，驱动 Tab 行压缩形态
+    val collapseFraction = if (titleBarHeight > 0f) {
+        (-heightOffset / titleBarHeight).coerceIn(0f, 1f)
+    } else 0f
 
     val headerNestedScrollConnection = remember {
         object : NestedScrollConnection {
@@ -269,13 +347,18 @@ fun ExplorePage() {
                         .fillMaxWidth()
                         .background(color = ExtendedTheme.colors.topBar),
                 ) {
-                    ExplorePageTab(pagerState = pagerState, pages = pages)
+                    ExplorePageTab(
+                        pagerState = pagerState,
+                        pages = pages,
+                        collapseFraction = collapseFraction
+                    )
                 }
             }
         },
         modifier = Modifier.fillMaxSize(),
     ) { paddingValues ->
         LazyLoadHorizontalPager(
+            // 呼吸位在各子页列表的 contentPadding 上(Pager 的 contentPadding 会裁剪页面视口)
             contentPadding = paddingValues,
             state = pagerState,
             key = { pages[it].id },

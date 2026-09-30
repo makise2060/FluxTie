@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -80,6 +81,14 @@ import kotlin.math.roundToInt
 enum class LayoutType {
     HEADER, CONTENT
 }
+
+/**
+ * 真悬浮底栏模式下,内容列表需要预留的底部呼吸位:
+ * 胶囊高 ~60dp + 底边距 12dp + 呼吸 8dp ≈ 80dp(导航栏系统避让由各页 Scaffold 单独提供)。
+ * 经典贴底模式 / Rail 抽屉模式为 0.dp(沿用 Scaffold paddingValues 避让)。
+ */
+val MainBottomBreathing = 80.dp
+val LocalMainBottomInsets = staticCompositionLocalOf { 0.dp }
 
 @Composable
 fun PermanentNavigationDrawer(
@@ -464,7 +473,8 @@ fun FloatingBottomNav(
     ) {
         Surface(
             shape = RoundedCornerShape(36.dp),
-            color = themeColors.bottomBarSurface,
+            // 真悬浮:微透明让透出的内容若隐若现
+            color = themeColors.bottomBarSurface.copy(alpha = 0.92f),
             border = BorderStroke(
                 width = 1.dp,
                 color = themeColors.divider.copy(alpha = if (themeColors.isNightMode) 0.4f else 0.5f)

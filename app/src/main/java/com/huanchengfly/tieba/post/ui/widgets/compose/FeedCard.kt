@@ -2,11 +2,27 @@ package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import android.content.pm.ActivityInfo
 import android.util.Log
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +38,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,31 +58,42 @@ import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.material.icons.rounded.SwapCalls
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
 import com.eygraber.compose.placeholder.PlaceholderHighlight
-import com.eygraber.compose.placeholder.material.fade
+import com.eygraber.compose.placeholder.material.shimmer
 import com.eygraber.compose.placeholder.material.placeholder
 import com.stoyanvuchev.systemuibarstweaker.rememberSystemUIBarsTweaker
 import com.huanchengfly.tieba.post.App
@@ -100,8 +129,11 @@ import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.appPreferences
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sin
 
 private val ImmutableHolder<Media>.url: String
     get() = ImageUtil.getUrl(
@@ -224,8 +256,16 @@ fun Card(
     Column(
         modifier = cardModifier
             .then(modifier)
+            // 卡片统一左右边距:上下由列表 spacedBy、左右由此处统一提供
+            .padding(horizontal = 8.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(ExtendedTheme.colors.card)
+            // hairline 描边:与背景拉开卡片边界(M3 tonal 语言,无阴影)
+            .border(
+                width = 0.5.dp,
+                color = ExtendedTheme.colors.divider.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(20.dp)
+            )
             .then(paddingModifier)
             .padding(contentPadding)
     ) {
@@ -334,8 +374,8 @@ fun FeedCardPlaceholder() {
                 modifier = Modifier
                     .placeholder(
                         visible = true,
-                        color = MaterialTheme.colors.surface,
-                        highlight = PlaceholderHighlight.fade(),
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f),
+                        highlight = PlaceholderHighlight.shimmer(),
                     )
             )
 
@@ -349,8 +389,8 @@ fun FeedCardPlaceholder() {
                     .fillMaxWidth()
                     .placeholder(
                         visible = true,
-                        color = MaterialTheme.colors.surface,
-                        highlight = PlaceholderHighlight.fade(),
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f),
+                        highlight = PlaceholderHighlight.shimmer(),
                     )
             )
         },
@@ -697,6 +737,109 @@ fun ThreadReplyBtn(
     )
 }
 
+/**
+ * 可复用的动画心形:交叉淡化空心/实心 + 按压缩放 + 点赞瞬间"心跳式"双脉冲过冲 + 旋转摆动 + 光环扩散 + 粒子爆裂。
+ * interactionSource 用于感知按压(与外层 clickable 共用);不传则无按压效果。
+ */
+@Composable
+fun AgreeHeart(
+    hasAgree: Boolean,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 18.dp,
+    interactionSource: MutableInteractionSource? = null,
+) {
+    val pressed = if (interactionSource != null) {
+        interactionSource.collectIsPressedAsState()
+    } else {
+        remember { mutableStateOf(false) }
+    }
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed.value) 0.85f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
+        label = "agreePressScale"
+    )
+    var burstKey by remember { mutableIntStateOf(0) }
+    val wasAgree = remember { mutableStateOf(hasAgree) }
+    LaunchedEffect(hasAgree) {
+        if (hasAgree && !wasAgree.value) burstKey++
+        wasAgree.value = hasAgree
+    }
+    // 心跳式双脉冲:撑大 → 收缩 → 回弹落定,比单次过冲更有"怦然"感
+    val likeScale = remember { Animatable(1f) }
+    val likeRotation = remember { Animatable(0f) }
+    LaunchedEffect(burstKey) {
+        if (burstKey > 0) {
+            likeScale.snapTo(1f)
+            likeRotation.snapTo(0f)
+            likeScale.animateTo(1.25f, tween(durationMillis = 90, easing = EaseOutCubic))
+            likeRotation.animateTo(-12f, tween(durationMillis = 90, easing = EaseOutCubic))
+            likeScale.animateTo(0.85f, tween(durationMillis = 90, easing = EaseOutCubic))
+            likeRotation.animateTo(9f, spring(dampingRatio = 0.55f, stiffness = 700f))
+            likeScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 700f))
+            likeRotation.animateTo(0f, spring(dampingRatio = 0.55f, stiffness = 700f))
+        }
+    }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(iconSize * 1.2f)
+            .graphicsLayer {
+                scaleX = pressScale * likeScale.value
+                scaleY = pressScale * likeScale.value
+                rotationZ = likeRotation.value
+            }
+    ) {
+        Crossfade(
+            targetState = hasAgree,
+            animationSpec = tween(durationMillis = 150),
+            label = "agreeIcon"
+        ) { agreed ->
+            Icon(
+                imageVector = if (agreed) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                contentDescription = stringResource(id = R.string.desc_like),
+                tint = tint,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+        AgreeBurst(
+            triggerKey = burstKey,
+            modifier = Modifier.size(iconSize * 3.2f)
+        )
+    }
+}
+
+/**
+ * 计数数字上滚/下滚:数值增大时旧值上移淡出、新值自下而上进入;减小时方向镜像。
+ */
+@Composable
+fun RollingCount(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.caption,
+) {
+    AnimatedContent(
+        targetState = text,
+        transitionSpec = {
+            val increasing = targetState.toLongOrNull()?.let { new ->
+                initialState.toLongOrNull()?.let { new > it }
+            } != false
+            val slide = slideInVertically(tween(180, easing = EaseOutCubic)) {
+                if (increasing) it else -it
+            } + fadeIn(tween(180))
+            val outSlide = slideOutVertically(tween(180, easing = EaseOutCubic)) {
+                if (increasing) -it else it
+            } + fadeOut(tween(180))
+            slide togetherWith outSlide
+        },
+        label = "rollingCount",
+        modifier = modifier
+    ) { value ->
+        Text(text = value, style = style, color = color)
+    }
+}
+
 @Composable
 fun ThreadAgreeBtn(
     hasAgree: Boolean,
@@ -704,28 +847,119 @@ fun ThreadAgreeBtn(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
     val contentColor =
         if (hasAgree) ExtendedTheme.colors.primary else ExtendedTheme.colors.textSecondary
-    val animatedColor by animateColorAsState(contentColor, label = "agreeBtnContentColor")
-
-    ActionBtn(
-        icon = {
-            Icon(
-                imageVector = if (hasAgree) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                contentDescription = stringResource(id = R.string.desc_like),
-            )
-        },
-        text = {
-            Text(
-                text = if (agreeNum == "0" || agreeNum.isEmpty())
-                    stringResource(id = R.string.title_agree)
-                else agreeNum.toLongOrNull()?.getShortNumString() ?: agreeNum
-            )
-        },
-        modifier = modifier,
-        color = animatedColor,
-        onClick = onClick
+    val animatedColor by animateColorAsState(
+        targetValue = contentColor,
+        animationSpec = spring(dampingRatio = 1f, stiffness = 1600f),
+        label = "agreeBtnContentColor"
     )
+    val interactionSource = remember { MutableInteractionSource() }
+
+    val numText = if (agreeNum == "0" || agreeNum.isEmpty())
+        stringResource(id = R.string.title_agree)
+    else agreeNum.toLongOrNull()?.getShortNumString() ?: agreeNum
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .debounceClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = {
+                    if (!hasAgree) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    } else {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    onClick()
+                }
+            )
+            .padding(vertical = 16.dp, horizontal = 4.dp)
+    ) {
+        AgreeHeart(
+            hasAgree = hasAgree,
+            tint = animatedColor,
+            interactionSource = interactionSource
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        RollingCount(text = numText, color = animatedColor)
+    }
+}
+
+/**
+ * 点赞爆发:中心闪光 + 光环扩散 + 12 粒变速粒子放射(420ms),仅在 triggerKey 递增时播放一次。
+ * 粒子按索引确定性抖动(角度/距离/大小各异),视觉上更"炸"而非均匀圆点。
+ */
+@Composable
+private fun AgreeBurst(
+    triggerKey: Int,
+    modifier: Modifier = Modifier,
+) {
+    val progress = remember { Animatable(1f) }
+    LaunchedEffect(triggerKey) {
+        if (triggerKey > 0) {
+            progress.snapTo(0f)
+            progress.animateTo(1f, tween(durationMillis = 420, easing = FastOutLinearInEasing))
+        }
+    }
+    if (progress.value >= 1f) return
+    val primaryColor = ExtendedTheme.colors.primary
+    val colors = listOf(
+        primaryColor,
+        ExtendedTheme.colors.accent,
+        MaterialTheme.colors.secondary,
+        primaryColor,
+        primaryColor,
+        MaterialTheme.colors.secondary,
+        ExtendedTheme.colors.accent,
+        primaryColor,
+        ExtendedTheme.colors.accent,
+        primaryColor,
+        MaterialTheme.colors.secondary,
+        primaryColor,
+    )
+    Canvas(modifier = modifier) {
+        val p = progress.value
+        val maxRadius = size.minDimension / 2f
+
+        // 中心闪光:前 40% 进度内一个实心光斑快速放大淡出,撑出"爆点"
+        if (p < 0.4f) {
+            val flashP = p / 0.4f
+            drawCircle(
+                color = primaryColor.copy(alpha = 0.35f * (1f - flashP)),
+                radius = maxRadius * (0.25f + 0.35f * flashP),
+                center = center
+            )
+        }
+
+        // 光环扩散:细描边圆环向外扩张并淡出
+        drawCircle(
+            color = primaryColor.copy(alpha = 0.55f * (1f - p)),
+            radius = maxRadius * (0.3f + 0.7f * p),
+            center = center,
+            style = Stroke(width = 2.dp.toPx() * (1f - p))
+        )
+
+        // 12 粒粒子:索引驱动确定性抖动,双速档(偶数快奇数慢)拉开层次
+        repeat(12) { i ->
+            val angle = (i / 12f * 2f * PI.toFloat()) - (PI / 2f).toFloat() +
+                    0.22f * (if (i % 2 == 0) 1f else -1f)
+            val speedFactor = if (i % 2 == 0) 1f else 0.72f
+            val radius = maxRadius * (0.3f + 0.7f * p) * speedFactor
+            val dotRadius = (if (i % 3 == 0) 2.6f else 1.8f).dp.toPx() * (1f - 0.45f * p)
+            drawCircle(
+                color = colors[i].copy(alpha = (1f - p).coerceIn(0f, 1f)),
+                radius = dotRadius,
+                center = Offset(
+                    center.x + cos(angle) * radius,
+                    center.y + sin(angle) * radius
+                )
+            )
+        }
+    }
 }
 
 @Composable
@@ -1011,8 +1245,8 @@ private fun ActionBtnPlaceholder(
             modifier = Modifier
                 .placeholder(
                     visible = true,
-                    color = MaterialTheme.colors.surface,
-                    highlight = PlaceholderHighlight.fade(),
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f),
+                    highlight = PlaceholderHighlight.shimmer(),
                 ),
         )
     }

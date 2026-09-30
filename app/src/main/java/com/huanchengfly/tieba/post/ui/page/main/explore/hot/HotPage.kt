@@ -4,6 +4,7 @@ import android.graphics.Typeface
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.onGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
+import com.huanchengfly.tieba.post.ui.page.main.LocalMainBottomInsets
 import com.huanchengfly.tieba.post.ui.common.theme.compose.OrangeA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.RedA700
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
@@ -113,6 +115,8 @@ fun HotPage(
         onRefresh = { viewModel.send(HotUiIntent.Load) })
     Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
         MyLazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(top = 4.dp, bottom = LocalMainBottomInsets.current),
             modifier = Modifier
                 .fillMaxWidth(),
         ) {
@@ -402,7 +406,7 @@ private fun ThreadListItemPlaceholder() {
                     .padding(top = 3.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .wrapContentSize()
-                    .placeholder(visible = true, color = MaterialTheme.colors.surface)
+                    .placeholder(visible = true, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
                     .padding(vertical = 1.dp, horizontal = 4.dp)
             )
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -410,13 +414,13 @@ private fun ThreadListItemPlaceholder() {
                     text = "",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .placeholder(visible = true, color = MaterialTheme.colors.surface)
+                        .placeholder(visible = true, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
                 )
                 Text(
                     text = stringResource(id = R.string.hot_num, "666"),
                     style = MaterialTheme.typography.caption,
                     color = ExtendedTheme.colors.textSecondary,
-                    modifier = Modifier.placeholder(visible = true, color = MaterialTheme.colors.surface)
+                    modifier = Modifier.placeholder(visible = true, color = MaterialTheme.colors.onSurface.copy(alpha = 0.08f))
                 )
             }
         }

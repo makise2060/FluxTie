@@ -549,6 +549,8 @@
     <string name="seed_indigo">靛蓝</string>
     <string name="seed_amber">琥珀</string>
     <string name="seed_cyan">青</string>
+    <string name="title_predictive_back">预测性返回手势</string>
+    <string name="summary_predictive_back">返回手势时实时预览页面退场动画（Android 13+，关闭后返回仍正常但无预览）</string>
     <string name="title_floating_bottom_nav">悬浮底栏</string>
     <string name="summary_floating_bottom_nav">主页底栏使用悬浮胶囊样式，关闭后为传统贴底样式</string>
     <string name="title_dark_style_grey">深邃灰</string>

@@ -32,6 +32,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.rounded.BrightnessAuto
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DarkMode
@@ -537,6 +538,14 @@ fun CustomSettingsPage(
                         title = stringResource(id = R.string.title_lift_up_bottom_bar),
                         summary = stringResource(id = R.string.summary_lift_up_bottom_bar),
                         key = "liftUpBottomBar",
+                        defaultValue = true,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.AutoMirrored.Rounded.Reply,
+                        title = stringResource(id = R.string.title_predictive_back),
+                        summary = stringResource(id = R.string.summary_predictive_back),
+                        key = "predictive_back",
                         defaultValue = true,
                     )
                 }

@@ -42,7 +42,10 @@ import androidx.compose.material.Surface
 import androidx.compose.material.SwipeableDefaults
 import androidx.compose.material.Text
 import androidx.compose.material.rememberModalBottomSheetState
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -53,6 +56,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -87,6 +91,7 @@ import com.huanchengfly.tieba.post.components.ClipBoardLink
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.ClipBoardThreadLink
 import com.huanchengfly.tieba.post.services.NotifyJobService
+import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.NavGraphs
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
@@ -502,6 +507,31 @@ class MainActivityV2 : BaseComposeActivity() {
                 val currentDestination by navController.currentDestinationAsState()
 
                 navController.navigatorProvider += navigator
+
+                // 预测性返回开关:关闭时以高优先级回调接管返回,直接执行导航弹栈
+                // (无手势预览),系统级 predictive back 预览由 manifest 的
+                // enableOnBackInvokedCallback + navigation 库在开关开启时生效
+                val predictiveBack by rememberPreferenceAsState(
+                    key = booleanPreferencesKey("predictive_back"),
+                    defaultValue = true
+                )
+                if (!predictiveBack) {
+                    val backDispatcher = LocalOnBackPressedDispatcherOwner.current
+                    val backCallback = remember(navController) {
+                        object : OnBackPressedCallback(true) {
+                            override fun handleOnBackPressed() {
+                                navController.navigateUp()
+                            }
+                        }
+                    }
+                    DisposableEffect(backDispatcher) {
+                        backDispatcher?.onBackPressedDispatcher?.addCallback(
+                            backDispatcher,
+                            backCallback
+                        )
+                        onDispose { backCallback.remove() }
+                    }
+                }
 
                 CompositionLocalProvider(
                     LocalNavController provides navController,

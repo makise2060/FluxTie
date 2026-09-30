@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -416,7 +417,13 @@ internal fun SubPostsContent(
         ) { paddingValues ->
             LoadMoreLayout(
                 modifier = Modifier.padding(paddingValues),
-                indicatorBottomInset = paddingValues.calculateBottomPadding(),
+                // 有回复栏时容器底缘即栏上沿(胶囊从栏后滑出、停在栏上方 8dp);
+                // 无回复栏时容器直达屏幕底,需额外避开系统导航栏
+                indicatorBottomInset = if (account != null && !LocalContext.current.appPreferences.hideReply) {
+                    8.dp
+                } else {
+                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 8.dp
+                },
                 isLoading = isLoading,
                 onLoadMore = {
                     viewModel.send(

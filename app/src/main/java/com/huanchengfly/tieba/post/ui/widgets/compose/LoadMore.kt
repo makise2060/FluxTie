@@ -75,8 +75,10 @@ fun LoadMoreLayout(
     lazyListState: LazyListState? = null,
     isEmpty: Boolean = lazyListState?.layoutInfo?.totalItemsCount == 0,
     preloadCount: Int = 3,
-    // 指示器滑动区间整体上移量:页面内容区下方有 bottomBar 时传入其高度,避免胶囊被底栏遮挡
-    indicatorBottomInset: Dp = 0.dp,
+    // 指示器展开位:胶囊底边停在容器底缘之上该距离。
+    // 容器底部有底栏/悬浮元素(回复栏、悬浮底栏胶囊)时传入其高度,胶囊即从底栏后滑出、停在其上沿;
+    // 默认 70dp 保持无底栏页面(胶囊滑出后悬于底缘上方)的既有观感。
+    indicatorBottomInset: Dp = LoadDistance,
     content: @Composable () -> Unit,
 ) {
     val loadDistance = with(LocalDensity.current) { LoadDistance.toPx() }
@@ -174,7 +176,15 @@ fun LoadMoreLayout(
         Box(modifier = Modifier
             .align(Alignment.BottomCenter)
             .offset {
-                IntOffset(0, (swipeableState.offset.value - indicatorInsetPx).roundToInt())
+                // 指示器纵向位置按拉动进度在「隐藏位」与「展开位」之间线性过渡:
+                // - 隐藏位固定为容器底缘之下 loadDistance(胶囊整体藏出底缘,底栏/屏幕底不会"截胡");
+                // - 展开位为容器底缘之上 indicatorBottomInset(有底栏页面传入底栏高度,停在其上沿)。
+                // 旧实现直接 1:1 平移(offset - inset):底部有底栏时隐藏位会"浮"进底栏后的可见区,
+                // 拉动一开始胶囊就整体弹出(蹦跳),且最终停在过高处。
+                val progress = ((loadDistance - swipeableState.offset.value) / (loadDistance * 2f))
+                    .coerceIn(0f, 1f)
+                val indicatorOffsetY = loadDistance + (-indicatorInsetPx - loadDistance) * progress
+                IntOffset(0, indicatorOffsetY.roundToInt())
             }
         ) {
             if (enableLoadMore && swipeableState.offset.value != loadDistance) {

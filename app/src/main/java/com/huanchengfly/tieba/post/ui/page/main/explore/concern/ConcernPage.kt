@@ -84,6 +84,8 @@ fun ConcernPage(
             isLoading = isLoadingMore,
             onLoadMore = { viewModel.send(ConcernUiIntent.LoadMore(nextPageTag)) },
             lazyListState = lazyListState,
+            // 真悬浮底栏胶囊浮于内容之上,加载提示胶囊需停在呼吸位上(经典贴底模式为 0)
+            indicatorBottomInset = LocalMainBottomInsets.current,
         ) {
             MyLazyColumn(
                 state = lazyListState,

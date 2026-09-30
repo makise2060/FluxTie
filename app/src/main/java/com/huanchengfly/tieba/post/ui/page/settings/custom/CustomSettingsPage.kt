@@ -32,7 +32,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.rounded.BrightnessAuto
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DarkMode
@@ -540,14 +539,6 @@ fun CustomSettingsPage(
                         key = "liftUpBottomBar",
                         defaultValue = true,
                     )
-                    CardDivider()
-                    SwitchSettingRow(
-                        icon = Icons.AutoMirrored.Rounded.Reply,
-                        title = stringResource(id = R.string.title_predictive_back),
-                        summary = stringResource(id = R.string.summary_predictive_back),
-                        key = "predictive_back",
-                        defaultValue = true,
-                    )
                 }
             }
 
@@ -660,10 +651,12 @@ internal fun SettingRow(
 }
 
 @Composable
-private fun SwitchSettingRow(
+internal fun SwitchSettingRow(
     icon: ImageVector,
     title: String,
     summary: String? = null,
+    summaryOn: String? = null,
+    summaryOff: String? = null,
     key: String,
     defaultValue: Boolean,
     enabled: Boolean = true,
@@ -676,7 +669,7 @@ private fun SwitchSettingRow(
     SettingRow(
         icon = icon,
         title = title,
-        summary = summary,
+        summary = if (checked) summaryOn ?: summary else summaryOff ?: summary,
         enabled = enabled,
         onClick = {
             checked = !checked

@@ -1554,7 +1554,9 @@ fun ThreadPage(
                             lazyListState = lazyListState,
                             isEmpty = data.isEmpty(),
                             preloadCount = loadMorePreloadCount,
-                            indicatorBottomInset = paddingValues.calculateBottomPadding(),
+                            // 内容区已被 Scaffold 底栏避让(容器底缘即回复栏上沿),
+                            // 胶囊从回复栏后滑出、停在栏上方 8dp 处即可,不能再叠加一次栏高
+                            indicatorBottomInset = 8.dp,
                         ) {
                             MyLazyColumn(
                                 state = lazyListState,

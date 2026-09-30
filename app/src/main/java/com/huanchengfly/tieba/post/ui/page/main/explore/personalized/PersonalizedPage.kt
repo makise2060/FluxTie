@@ -193,7 +193,9 @@ fun PersonalizedPage(
                 onLoadMore = { viewModel.send(PersonalizedUiIntent.LoadMore(currentPage + 1)) },
                 loadEnd = false,
                 lazyListState = lazyListState,
-                isEmpty = data.isEmpty()
+                isEmpty = data.isEmpty(),
+                // 真悬浮底栏胶囊浮于内容之上,加载提示胶囊需停在呼吸位上(经典贴底模式为 0)
+                indicatorBottomInset = LocalMainBottomInsets.current,
             ) {
                 FeedList(
                     state = lazyListState,

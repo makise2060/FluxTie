@@ -23,6 +23,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.BrandingWatermark
 import androidx.compose.material.icons.automirrored.outlined.ExitToApp
+import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.filled.TabletAndroid
 import androidx.compose.material.icons.outlined.AddModerator
@@ -206,6 +207,22 @@ fun HabitSettingsPage(
             }
             prefsItem {
                 StartPageSelector()
+            }
+            prefsItem {
+                SwitchPref(
+                    key = "predictive_back",
+                    title = stringResource(id = R.string.title_predictive_back),
+                    summary = { context.getString(R.string.summary_predictive_back) },
+                    defaultChecked = true,
+                ) {
+                    LeadingIcon {
+                        AvatarIcon(
+                            icon = Icons.AutoMirrored.Rounded.Reply,
+                            size = Sizes.Small,
+                            contentDescription = null,
+                        )
+                    }
+                }
             }
             prefsItem {
                 SwitchPref(

@@ -84,10 +84,17 @@ enum class LayoutType {
 
 /**
  * 真悬浮底栏模式下,内容列表需要预留的底部呼吸位:
- * 胶囊高 ~60dp + 底边距 12dp + 呼吸 8dp ≈ 80dp(导航栏系统避让由各页 Scaffold 单独提供)。
+ * 胶囊高 ~60dp + 底边距 12dp + 呼吸 8dp ≈ 80dp。
+ * 系统导航栏避让不在此常量内,由 MainPage 统一加进 [LocalMainBottomInsets]。
  * 经典贴底模式 / Rail 抽屉模式为 0.dp(沿用 Scaffold paddingValues 避让)。
  */
 val MainBottomBreathing = 80.dp
+
+/**
+ * 真悬浮底栏模式下,页面底部需要避让的总高度(呼吸位 + 系统导航栏):
+ * 列表 contentPadding 与底部悬浮提示(加载提示胶囊等)共用,保证二者停在同一呼吸线上;
+ * 经典贴底 / Rail 抽屉模式为 0.dp。
+ */
 val LocalMainBottomInsets = staticCompositionLocalOf { 0.dp }
 
 @Composable

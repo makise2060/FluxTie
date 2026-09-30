@@ -68,7 +68,7 @@
 - 点赞微动效：心跳双脉冲 + 旋转摆动 + 光环粒子爆发，全站统一点赞组件
 - 骨架屏体系：帖子页 / 楼中楼 / 吧页 / 个人页加载骨架，Shimmer 高光扫过
 - 真悬浮底栏：列表呼吸位统一，末项可完整滚出胶囊（开关可回退传统贴底样式）
-- 预测性返回：返回手势实时预览页面退场动画（Android 13+，外观设置可关闭）
+- 预测性返回：返回手势实时预览页面退场动画（Android 13+，使用习惯设置可关闭）
 - 权限弹窗统一新图标；状态栏字体颜色随明暗模式正确切换
 - KSP 全链路构建，Java 17 目标，`FluxTie-v{版本}-{渠道}.apk` 规范命名
 
@@ -103,7 +103,7 @@ cd FluxTie
 
 # 需要 JDK 17+，Android SDK 37；local.properties 配置 sdk.dir
 ./gradlew assembleDebug
-# 产物：app/build/outputs/apk/debug/FluxTie-v{版本}-debug.apk
+# 产物：app/build/outputs/apk/debug/FluxTie-v{版本}.apk
 ```
 
 ## 🧬 Fork 谱系与致谢

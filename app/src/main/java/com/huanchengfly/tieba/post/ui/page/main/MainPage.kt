@@ -16,8 +16,11 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -283,6 +286,10 @@ fun MainPage(
     val saveableStateHolder = rememberSaveableStateHolder()
     // 真悬浮布局:胶囊叠于内容之上,内容 edge-to-edge;经典贴底/Rail 模式沿用 Scaffold 避让
     val floatingLayout = navigationType == MainNavigationType.BOTTOM_NAVIGATION && floatingBottomNav
+    // M2 Scaffold 不做系统 insets 避让(contentWindowInsets 传的是全 0),悬浮模式下底部
+    // 导航栏区域需在此统一补足:呼吸位 = 胶囊高 + 底边距 + 呼吸(80dp) + 系统导航栏,
+    // 列表末项才能完整滚出胶囊,加载提示胶囊也停在这条线上。
+    val navigationBarsInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     ProvideNavigator(navigator = navigator) {
         NavigationWrapper(
             currentPosition = currentPosition,
@@ -293,7 +300,9 @@ fun MainPage(
             navigationContentPosition = navigationContentPosition
         ) {
             CompositionLocalProvider(
-                LocalMainBottomInsets provides if (floatingLayout) MainBottomBreathing else 0.dp
+                LocalMainBottomInsets provides if (floatingLayout) {
+                    MainBottomBreathing + navigationBarsInset
+                } else 0.dp
             ) {
                 MyScaffold(
                     backgroundColor = Color.Transparent,

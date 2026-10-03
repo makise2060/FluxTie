@@ -59,6 +59,7 @@ import java.util.Date
 import java.util.Locale
 
 private data class LogEntry(
+    val id: Int,
     val level: Char,
     val tag: String,
     val message: String,
@@ -94,12 +95,12 @@ fun LogPage(
             runCatching {
                 val process = Runtime.getRuntime()
                     .exec(arrayOf("logcat", "-d", "-v", "time", "--pid=$pid"))
-                process.inputStream.bufferedReader().readLines().mapNotNull { line ->
+                process.inputStream.bufferedReader().readLines().mapIndexedNotNull { index, line ->
                     // 格式：MM-DD HH:MM:SS.mmm LEVEL/TAG( pid): message
                     val match = Regex("^\\d{2}-\\d{2}\\s+(\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+([VDIWEF])/([^(:]*)\\(\\s*\\d+\\):\\s?(.*)$").find(line)
-                        ?: return@mapNotNull null
+                        ?: return@mapIndexedNotNull null
                     val (time, level, tag, msg) = match.destructured
-                    LogEntry(level = level.first(), tag = tag.trim(), message = msg, time = time)
+                    LogEntry(id = index, level = level.first(), tag = tag.trim(), message = msg, time = time)
                 }
             }.getOrDefault(emptyList())
         }
@@ -201,7 +202,7 @@ fun LogPage(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(filtered, key = { it.time + it.tag + it.message.hashCode() }) { entry ->
+                items(filtered, key = { it.id }) { entry ->
                     val levelColor = LEVEL_COLORS[entry.level] ?: ExtendedTheme.colors.textSecondary
                     Column(
                         modifier = Modifier

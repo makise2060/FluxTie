@@ -480,8 +480,8 @@ fun FloatingBottomNav(
     ) {
         Surface(
             shape = RoundedCornerShape(36.dp),
-            // 真悬浮:微透明让透出的内容若隐若现
-            color = themeColors.bottomBarSurface.copy(alpha = 0.92f),
+            // 真悬浮:半透明让透出的内容若隐若现
+            color = themeColors.bottomBarSurface.copy(alpha = 0.72f),
             border = BorderStroke(
                 width = 1.dp,
                 color = themeColors.divider.copy(alpha = if (themeColors.isNightMode) 0.4f else 0.5f)

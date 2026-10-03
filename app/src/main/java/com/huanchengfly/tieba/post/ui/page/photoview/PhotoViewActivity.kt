@@ -30,15 +30,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.github.panpf.sketch.compose.rememberAsyncImageState
 import com.github.panpf.sketch.request.LoadState
 import com.github.panpf.zoomimage.SketchZoomAsyncImage
@@ -52,6 +56,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.download
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 @Composable
@@ -105,6 +110,7 @@ private fun ViewPhoto(
 
 class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
     private val viewModel: PhotoViewViewModel by viewModels()
+    private var systemUIBarsTweaker: SystemUIBarsTweaker? = null
 
     override val dataExtraKey: String = EXTRA_PHOTO_VIEW_DATA
 
@@ -123,6 +129,23 @@ class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
         val hasNext by remember { derivedStateOf { uiState.hasNext } }
         val loadPicPageData by remember { derivedStateOf { uiState.loadPicPageData } }
         val loaded by remember { derivedStateOf { uiState.data.isNotEmpty() } }
+
+        // 记录隐藏系统栏前的导航栏高度，隐藏后底栏保持相同间距，避免操作条下移
+        val navigationBarsHeight = remember { mutableIntStateOf(0) }
+
+        LaunchedEffect(Unit) {
+            // 等待窗口 insets 分发完成
+            delay(100)
+            navigationBarsHeight.intValue = ViewCompat.getRootWindowInsets(window.decorView)
+                ?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
+            // 本 Activity 为半透明窗口，淡入动画（约 400ms）期间隐藏系统栏
+            // 会触发下层窗口 insets 重排造成可见跳动，故延迟到淡入完成后再隐藏
+            delay(350)
+            systemUIBarsTweaker?.apply {
+                tweakStatusBarVisibility(false)
+                tweakNavigationBarVisibility(false)
+            }
+        }
 
         Surface(color = Color.Black) {
             if (loaded) {
@@ -177,6 +200,8 @@ class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
                             .align(Alignment.BottomCenter)
                     ) {
                         ProvideContentColor(color = Color.White) {
+                            val density = LocalDensity.current
+                            val fixedNavBarsPadding = navigationBarsHeight.intValue
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -189,7 +214,16 @@ class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
                                         )
                                     )
                                     .padding(horizontal = 16.dp)
-                                    .navigationBarsPadding(),
+                                    .then(
+                                        if (fixedNavBarsPadding > 0) {
+                                            // 系统栏隐藏后 inset 会变为 0，改用隐藏前记录的固定高度
+                                            Modifier.padding(
+                                                bottom = with(density) { fixedNavBarsPadding.toDp() }
+                                            )
+                                        } else {
+                                            Modifier.navigationBarsPadding()
+                                        }
+                                    ),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 val index = pagerState.currentPage
@@ -253,8 +287,10 @@ class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
     }
 
     override fun onCreateContent(systemUIBarsTweaker: SystemUIBarsTweaker) {
-        systemUIBarsTweaker.tweakStatusBarVisibility(false)
-        systemUIBarsTweaker.tweakNavigationBarVisibility(false)
+        // 此处不立即隐藏系统栏：本 Activity 为半透明窗口，
+        // 淡入过渡期间隐藏会触发下层窗口 insets 重排造成跳动，
+        // 故仅保存引用，由 Content 在淡入完成后延迟隐藏（见 Content 中的 LaunchedEffect）
+        this.systemUIBarsTweaker = systemUIBarsTweaker
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {

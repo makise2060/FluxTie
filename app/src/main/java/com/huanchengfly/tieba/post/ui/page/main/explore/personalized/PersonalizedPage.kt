@@ -78,6 +78,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
+import com.huanchengfly.tieba.post.ui.widgets.compose.SplashState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -153,6 +154,14 @@ fun PersonalizedPage(
     viewModel.onEvent<PersonalizedUiEvent.RefreshSuccess> {
         refreshCount = it.count
         showRefreshTip = true
+    }
+
+    // 启动屏就绪信号：动态页作为启动起始页时首页不会组合，
+    // 以动态首屏数据就绪作为启动屏退场信号
+    LaunchedEffect(isRefreshing, data) {
+        if (!isRefreshing && data.isNotEmpty()) {
+            SplashState.markReady()
+        }
     }
 
     if (showRefreshTip) {

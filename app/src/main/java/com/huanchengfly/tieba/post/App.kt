@@ -93,12 +93,13 @@ class App : Application(), SketchFactory {
         AccountUtil.init(this)
         Config.init(this)
         val isSelfBuild = applicationMetaData.getBoolean("is_self_build")
-        AppIconUtil.setIcon()
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         ThemeUtils.init(ThemeDelegate)
         registerActivityLifecycleCallbacks(ClipBoardLinkDetector)
         registerActivityLifecycleCallbacks(OAIDGetter)
         thread {
+            // 图标组件切换涉及多次 PackageManager IPC，移出主线程避免拖慢冷启动
+            AppIconUtil.setIcon()
             runBlocking { BlockManager.init() }
             EmoticonManager.init(this@App)
         }

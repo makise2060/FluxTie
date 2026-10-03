@@ -117,9 +117,9 @@ fun AppSplashOverlay() {
     LaunchedEffect(Unit) {
         SplashState.reset()
         val start = System.currentTimeMillis()
-        // 循环播放直到：加载完成且达到最短展示时长；6s 超时兜底
-        val minDuration = 2400L
-        val timeout = 6000L
+        // 循环播放直到：加载完成且达到最短展示时长；3.5s 超时兜底
+        val minDuration = 1400L
+        val timeout = 3500L
         while (true) {
             val elapsed = System.currentTimeMillis() - start
             if ((SplashState.ready.value && elapsed >= minDuration) || elapsed >= timeout) break

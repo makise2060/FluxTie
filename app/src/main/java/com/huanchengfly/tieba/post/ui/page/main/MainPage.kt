@@ -66,6 +66,7 @@ import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationContentPosition
 import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
+import com.huanchengfly.tieba.post.ui.widgets.compose.SplashState
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -158,6 +159,14 @@ fun MainPage(
     }
 
     val onChangePosition: (Int) -> Unit = { currentPosition = it }
+
+    // 启动屏就绪兜底：起始页非首页时（动态/消息/我的），
+    // HomePage 不会组合、无法触发 markReady，此处补位避免启动屏只能等超时退场
+    LaunchedEffect(Unit) {
+        if (currentPosition != 0) {
+            SplashState.markReady()
+        }
+    }
 
     LaunchedEffect(hideExplore) {
         if (currentPosition == 3 && hideExplore) {

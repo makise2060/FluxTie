@@ -25,6 +25,7 @@ private fun String.toIPermission(): IPermission {
         PermissionUtils.WRITE_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE -> PermissionLists.getWriteExternalStoragePermission()
         PermissionUtils.RECORD_AUDIO, Manifest.permission.RECORD_AUDIO -> PermissionLists.getRecordAudioPermission()
         PermissionUtils.POST_NOTIFICATIONS -> PermissionLists.getPostNotificationsPermission()
+        PermissionUtils.REQUEST_INSTALL_PACKAGES -> PermissionLists.getRequestInstallPackagesPermission()
         PermissionUtils.READ_MEDIA_IMAGES -> PermissionLists.getReadMediaImagesPermission()
         PermissionUtils.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION -> PermissionLists.getAccessFineLocationPermission()
         PermissionUtils.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION -> PermissionLists.getAccessCoarseLocationPermission()
@@ -74,6 +75,7 @@ object PermissionUtils {
 
     const val READ_MEDIA_IMAGES = "android.permission.READ_MEDIA_IMAGES"
     const val POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
+    const val REQUEST_INSTALL_PACKAGES = "android.permission.REQUEST_INSTALL_PACKAGES"
 
     /**
      * Turn permissions into text.

@@ -21,6 +21,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.OfflineBolt
+import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -252,6 +253,15 @@ fun SettingsPage(
                                     )
                                 )
                             }
+                        )
+                        CardDivider()
+                        SwitchSettingRow(
+                            icon = Icons.Outlined.Update,
+                            title = stringResource(id = R.string.title_auto_check_update),
+                            summaryOn = stringResource(id = R.string.tip_auto_check_update_on),
+                            summaryOff = stringResource(id = R.string.tip_auto_check_update_off),
+                            key = "auto_check_update",
+                            defaultValue = true,
                         )
                         if (context.appPreferences.showExperimentalFeatures) {
                             CardDivider()

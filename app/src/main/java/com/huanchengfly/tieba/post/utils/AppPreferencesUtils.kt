@@ -74,6 +74,15 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         defaultValue = false
     )
 
+    var autoCheckUpdate by DataStoreDelegates.boolean(
+        defaultValue = true,
+        key = "auto_check_update"
+    )
+
+    var ignoredUpdateVersion by DataStoreDelegates.string(key = "ignored_update_version")
+
+    var updateCheckCache by DataStoreDelegates.string(key = "update_check_cache")
+
     var collectThreadSeeLz by DataStoreDelegates.boolean(
         defaultValue = true,
         key = "collect_thread_see_lz"

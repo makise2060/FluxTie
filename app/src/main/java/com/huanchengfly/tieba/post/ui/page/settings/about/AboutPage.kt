@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.arch.hiltViewModel
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.destinations.LogPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -78,7 +79,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val REPO_URL = "https://github.com/makise2060/FluxTie"
-private const val RELEASES_URL = "https://github.com/makise2060/FluxTie/releases"
 
 @Destination
 @Composable
@@ -88,6 +88,7 @@ fun AboutPage(
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
+    val updateViewModel = hiltViewModel<UpdateViewModel>()
     var lastClickTime by remember { mutableLongStateOf(0L) }
     var clickCount by remember { mutableIntStateOf(0) }
 
@@ -255,7 +256,7 @@ fun AboutPage(
                     AboutRow(
                         icon = Icons.Rounded.History,
                         title = stringResource(id = R.string.title_check_update),
-                        onClick = { launchUrl(context, navigator, RELEASES_URL) }
+                        onClick = { updateViewModel.check() }
                     )
                     AboutDivider()
                     AboutRow(

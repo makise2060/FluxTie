@@ -67,12 +67,16 @@ import kotlin.math.sin
 object SplashState {
     val ready = MutableStateFlow(false)
 
+    /** 启动屏是否已结束（退场触发）——供启动静默检查等待，避免弹窗被遮挡。 */
+    val finished = MutableStateFlow(false)
+
     fun markReady() {
         ready.value = true
     }
 
     fun reset() {
         ready.value = false
+        finished.value = false
     }
 }
 
@@ -126,6 +130,7 @@ fun AppSplashOverlay() {
             delay(100)
         }
         visible = false
+        SplashState.finished.value = true
     }
     if (bgAlpha > 0.01f) {
         val splashBg = colorResource(id = R.color.colorSplashBg)

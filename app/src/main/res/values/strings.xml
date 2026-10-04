@@ -390,8 +390,8 @@
     <string name="summary_oksign_fail_auto_stop">单个吧签到失败会停止后续签到流程</string>
     <string name="title_stat_posts_num">回贴</string>
     <string name="toast_feature_unavailable">该功能尚未实现</string>
-    <string name="title_check_ci_update">接收自动构建版本更新</string>
-    <string name="tip_check_ci_update">仅供测试</string>
+    <string name="title_check_ci_update">接收预发布版本</string>
+    <string name="tip_check_ci_update">Beta 测试通道</string>
     <string name="desc_permission_post_notifications">用于发送消息通知、显示一键签到进度</string>
     <string name="desc_current_account">当前登录</string>
     <string name="source_code">开源代码</string>
@@ -618,4 +618,26 @@
     <string name="release_to_load_latest_posts">松开加载最新回复</string>
     <string name="pull_to_load_latest_posts">继续上拉加载最新回复</string>
     <string name="settings_home_page_show_history_forum">首页显示最近逛的吧</string>
+    <string name="title_auto_check_update">自动检查更新</string>
+    <string name="tip_auto_check_update_on">启动时自动检查新版本</string>
+    <string name="tip_auto_check_update_off">不自动检查新版本</string>
+    <string name="tip_update_checking">正在检查更新…</string>
+    <string name="title_dialog_update_latest">已是最新版本</string>
+    <string name="tip_update_check_failed">检查更新失败，请稍后重试</string>
+    <string name="title_update_changelog">更新日志</string>
+    <string name="button_update_download">立即更新</string>
+    <string name="button_update_install">立即安装</string>
+    <string name="button_update_later">稍后</string>
+    <string name="button_update_browser">浏览器下载</string>
+    <string name="tip_update_downloading">正在下载更新</string>
+    <string name="tip_update_download_failed">下载失败，请重试</string>
+    <string name="title_update_downloaded">下载完成</string>
+    <string name="tip_update_prerelease">Beta 版本</string>
+    <string name="desc_permission_install_update">用于安装应用更新</string>
+    <string name="toast_update_no_asset">未找到安装包，已跳转下载页</string>
+    <string name="title_update_channel_download">更新下载</string>
+    <string name="title_update_channel_ready">更新提醒</string>
+    <string name="title_update_notification_done">更新下载完成</string>
+    <string name="tip_update_notification_progress">正在下载 %1$d%%</string>
+    <string name="tip_update_notification_done">点击安装</string>
 </resources>

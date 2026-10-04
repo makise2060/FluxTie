@@ -4,5 +4,11 @@
         <cache-path
             name="shareCache"
             path=".shareTemp" />
+        <external-files-path
+            name="updateApk"
+            path="updates/" />
+        <files-path
+            name="updateApkInternal"
+            path="updates/" />
     </paths>
 </resource>

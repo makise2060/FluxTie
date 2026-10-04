@@ -57,12 +57,15 @@ import kotlinx.coroutines.launch
 @Composable
 fun DialogScope.DialogPositiveButton(
     text: String,
+    dismissOnClick: Boolean = true,
     onClick: () -> Unit = {}
 ) {
     TextButton(
         onClick = {
             onClick()
-            dismiss()
+            if (dismissOnClick) {
+                dismiss()
+            }
         },
         modifier = Modifier
             .fillMaxWidth(),

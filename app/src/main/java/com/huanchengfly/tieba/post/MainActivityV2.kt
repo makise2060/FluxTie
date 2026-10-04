@@ -99,6 +99,7 @@ import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
 import com.huanchengfly.tieba.post.ui.utils.isSeparating
+import com.huanchengfly.tieba.post.update.UpdateManager
 import com.huanchengfly.tieba.post.ui.widgets.compose.AppSplashOverlay
 import com.huanchengfly.tieba.post.ui.widgets.compose.AlertDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
@@ -107,6 +108,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Dialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogNegativeButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.DialogPositiveButton
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
+import com.huanchengfly.tieba.post.ui.widgets.compose.UpdateDialogHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
@@ -132,6 +134,7 @@ import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import com.ramcosta.composedestinations.utils.currentDestinationFlow
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -174,6 +177,9 @@ fun rememberBottomSheetNavigator(
 class MainActivityV2 : BaseComposeActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private val newMessageReceiver: BroadcastReceiver = NewMessageReceiver()
+
+    @Inject
+    lateinit var updateManager: UpdateManager
 
     private val notificationCountFlow: MutableSharedFlow<Int> =
         MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -283,6 +289,15 @@ class MainActivityV2 : BaseComposeActivity() {
         if (!checkIntent(intent)) {
             myNavController?.handleDeepLink(intent)
         }
+        handleUpdateIntent(intent)
+    }
+
+    /** 通知点击「安装更新」入口（单例状态在手时直接进安装流程）。 */
+    private fun handleUpdateIntent(intent: Intent) {
+        if (intent.getBooleanExtra(UpdateManager.EXTRA_INSTALL_UPDATE, false)) {
+            intent.removeExtra(UpdateManager.EXTRA_INSTALL_UPDATE)
+            updateManager.installOrPrompt(this)
+        }
     }
 
     private fun fetchAccount() {
@@ -353,11 +368,18 @@ class MainActivityV2 : BaseComposeActivity() {
         launch {
             ClientUtils.setActiveTimestamp()
         }
-        intent?.let { checkIntent(it) }
+        intent?.let {
+            checkIntent(it)
+            handleUpdateIntent(it)
+        }
         launch {
             // 延迟到应用内启动屏结束后再请求，避免弹窗被遮挡/打断
             delay(2600)
             requestNotificationPermission()
+        }
+        launch {
+            // 启动静默检查更新（内部等启动屏结束；开关关闭时不打扰）
+            updateManager.autoCheckIfNeeded()
         }
     }
 
@@ -459,6 +481,7 @@ class MainActivityV2 : BaseComposeActivity() {
     override fun Content() {
         val okSignAlertDialogState = rememberDialogState()
         ClipBoardDetectDialog()
+        UpdateDialogHost(updateManager)
         AlertDialog(
             dialogState = okSignAlertDialogState,
             title = { Text(text = stringResource(id = R.string.title_dialog_oksign_battery_optimization)) },

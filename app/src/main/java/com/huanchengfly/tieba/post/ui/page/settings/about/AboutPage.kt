@@ -219,27 +219,28 @@ fun AboutPage(
                             fontSize = 15.sp,
                             color = ExtendedTheme.colors.textSecondary
                         )
-                        // 彩蛋气泡
-                        AnimatedVisibility(
-                            visible = bubbleVisible,
-                            enter = fadeIn(tween(200)) + slideInVertically(tween(250)) { -it / 2 },
-                            exit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it / 2 },
-                            modifier = Modifier.padding(top = 12.dp)
+                    }
+                    // 彩蛋气泡：叠加层，不参与 Column 测量，出现/消失不挤动下方内容
+                    // （气泡高度小于 Column 底部内边距，底对齐即落在版本号下方空隙）
+                    AnimatedVisibility(
+                        visible = bubbleVisible,
+                        enter = fadeIn(tween(200)) + slideInVertically(tween(250)) { -it / 2 },
+                        exit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { -it / 2 },
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .shadow(2.dp, RoundedCornerShape(100))
+                                .clip(RoundedCornerShape(100))
+                                .background(color = ExtendedTheme.colors.primary)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .shadow(2.dp, RoundedCornerShape(100))
-                                    .clip(RoundedCornerShape(100))
-                                    .background(color = ExtendedTheme.colors.primary)
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(id = bubbleResId),
-                                    color = ExtendedTheme.colors.onAccent,
-                                    fontSize = 13.sp
-                                )
-                            }
+                            Text(
+                                text = stringResource(id = bubbleResId),
+                                color = ExtendedTheme.colors.onAccent,
+                                fontSize = 13.sp
+                            )
                         }
                     }
                 }

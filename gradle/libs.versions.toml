@@ -41,6 +41,7 @@ kotlinx-coroutines = "1.11.0"
 kotlinx-serialization-json = "1.11.0"
 kotlinx-collections-immutable = "0.4.0"
 material-kolor = "5.0.1"
+haze = "2.0.0-alpha03"
 
 glide = "5.0.7"
 okhttp3 = "5.3.2"
@@ -83,6 +84,10 @@ airbnb-lottie-compose = { group = "com.airbnb.android", name = "lottie-compose",
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "kotlinx-collections-immutable" }
 material-kolor = { group = "com.materialkolor", name = "material-kolor", version.ref = "material-kolor" }
+
+# Haze（悬浮底栏毛玻璃）
+haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
+haze-blur = { group = "dev.chrisbanes.haze", name = "haze-blur", version.ref = "haze" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 

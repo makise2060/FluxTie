@@ -138,9 +138,12 @@ private val DockIndicatorRimWidth = 1.dp
 /** 指示器轮廓内侧光带宽度。 */
 private val DockIndicatorRimGlowWidth = 2.dp
 
+/** 指示器外圈微光晕描边总宽（居中描边，外半越出胶囊边界成光晕；壳同款，指示器略窄）。 */
+private val DockIndicatorHaloWidth = 4.dp
+
 /**
- * 指示器视觉居中补偿：浅色下底部暗边描边醒目、顶部白描边融入壳色不可见，
- * 视觉重心下沉；几何上移少许抵消，使色块的视觉边界上下对称。
+ * 指示器视觉居中补偿：底部暗边叠在页面背景上、顶部高光叠在玻璃材质上，
+ * 两侧对比度不完全对称，视觉重心略沉；几何上移少许抵消（实测视觉中心偏差 ≈1px）。
  */
 private val DockIndicatorVisualLift = 0.5.dp
 
@@ -351,6 +354,9 @@ fun FloatingDock(
                 velocity = velocity.value,
                 panelOffsetPx = panelOffsetPx,
                 isNightMode = themeColors.isNightMode,
+                hazeState = hazeState,
+                blurSupported = blurSupported,
+                surfaceTint = surfaceTint,
             )
 
             // 槽位内容：名称展开与配色由指示器位置驱动（拖拽经过时实时切换）
@@ -525,12 +531,24 @@ private fun DockIndicator(
     velocity: Float,
     panelOffsetPx: () -> Float,
     isNightMode: Boolean,
+    hazeState: HazeState,
+    blurSupported: Boolean,
+    surfaceTint: Color,
 ) {
     val indicatorColor = if (isNightMode) Color.White else Color.Black
-    // 双峰轮廓光：顶部高光 + 底部次级弧（浅色下底部用极淡暗边勾边——过重会使色块视觉重心下沉）
-    val rimTopAlpha = if (isNightMode) 0.20f else 0.55f
+    val shape = CircleShape
+    // 按压进度（0..1）：驱动填充淡出、顶部高光增强与光晕增强
+    val bloomProgress =
+        ((pressedScaleX - 1f) / (DockIndicatorPressScale - 1f)).coerceIn(0f, 1f)
+    // 三层轮廓光（对齐壳体：外圈微光晕 + 顶部高光弧 + 底部次级弧）。
+    // 浅色：顶部白高光在玻璃材质上可见；底部暗边勾勒边界（白线在近白页面不可见）；
+    // 夜间：双峰白色反光。按压时高光增强，边缘随按压「亮起」强化透镜感
+    val rimTopAlpha = ((if (isNightMode) 0.25f else 0.80f) + 0.10f * bloomProgress)
+        .coerceAtMost(1f)
     val rimBottomColor = if (isNightMode) Color.White else Color.Black
-    val rimBottomAlpha = if (isNightMode) 0.08f else 0.05f
+    val rimBottomAlpha = if (isNightMode) 0.10f else 0.12f
+    // 外圈微光晕：浅色贴边暗晕勾勒边界，夜间贴边发光（壳同款）
+    val haloColor = if (isNightMode) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.06f)
     val rimBrush = Brush.verticalGradient(
         0f to Color.White.copy(alpha = rimTopAlpha),
         0.35f to Color.White.copy(alpha = 0f),
@@ -559,11 +577,43 @@ private fun DockIndicator(
                 scaleY = pressedScaleY * (1f - termY)
             }
             .drawBehind {
-                val bloomProgress =
-                    ((pressedScaleX - 1f) / (DockIndicatorPressScale - 1f)).coerceIn(0f, 1f)
-                val cornerRadius = CornerRadius(size.height / 2f)
+                // 外圈微光晕：居中描边，外半越出胶囊边界；内半被下方绘制覆盖
                 drawRoundRect(
-                    color = indicatorColor.copy(alpha = 0.10f + 0.03f * bloomProgress),
+                    color = haloColor,
+                    cornerRadius = CornerRadius(size.height / 2f),
+                    style = Stroke(width = DockIndicatorHaloWidth.toPx()),
+                )
+            }
+            .clip(shape)
+            .then(
+                // 玻璃透镜：指示器自身采样背景模糊，按压放大越出壳体的部分也能透出模糊内容
+                if (blurSupported) {
+                    Modifier.hazeEffect(state = hazeState) {
+                        blurEffect {
+                            style = HazeBlurStyle(
+                                backgroundColor = Color.Transparent,
+                                colorEffects = emptyList(),
+                                blurRadius = DockBlurRadius,
+                                noiseFactor = 0f,
+                                fallbackColorEffect = HazeColorEffect.tint(Color.Transparent),
+                            )
+                            blurEnabled = true
+                            blurredEdgeTreatment = BlurredEdgeTreatment(shape)
+                        }
+                    }
+                } else Modifier
+            )
+            .drawBehind {
+                val cornerRadius = CornerRadius(size.height / 2f)
+                // 壳体同款底色打底：指示器=「模糊(内容)+壳底色+指示色」，等效于壳上叠一块玻璃透镜
+                // （无模糊降级时指示器为不透明纯色块）；按压放大越界部分呈现与壳一致的玻璃材质
+                drawRoundRect(color = surfaceTint, cornerRadius = cornerRadius)
+                // 选中指示色：静止时 10% 托底；按压时淡出至 3% 残量（玻璃透镜仍可辨，避免完全融入壳体）
+                val fillAlpha = if (blurSupported) {
+                    0.10f * (1f - 0.7f * bloomProgress)
+                } else 0.10f
+                drawRoundRect(
+                    color = indicatorColor.copy(alpha = fillAlpha),
                     cornerRadius = cornerRadius,
                 )
                 drawRoundRect(

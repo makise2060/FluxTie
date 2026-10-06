@@ -241,7 +241,9 @@ fun PostAgreeBtn(
         shape = RoundedCornerShape(4.dp),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = ExtendedTheme.colors.background,
+            // 透明背景：按钮出现在楼中楼扁平行 / 主楼卡片（换色主题下为 tint 色）等多种容器上，
+            // 固定底色（页面底色）会与容器色不符形成突兀色块
+            backgroundColor = Color.Transparent,
             contentColor = animatedColor
         ),
         interactionSource = interactionSource,

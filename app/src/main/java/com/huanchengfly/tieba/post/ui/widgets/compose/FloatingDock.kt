@@ -37,6 +37,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -169,8 +170,9 @@ fun FloatingDock(
     // 指示器位置（浮点槽位索引）：拖拽中直接跟随手指，其余 spring 落定。
     val dragPosition = remember { Animatable(currentPosition.toFloat()) }
     var isDragging by remember { mutableStateOf(false) }
-    // 任一槽位按下 → 按压反馈（指示器 bloom + 壳 bloom + 内容放大）
-    var pressed by remember { mutableStateOf(false) }
+    // 被按压的槽位（-1 = 无）：壳 bloom 由任意按压触发；
+    // 指示器 bloom 仅「按下当前选中项」触发；按下的条目图标单独放大。
+    var pressedIndex by remember { mutableIntStateOf(-1) }
     val indicatorScaleX = remember { Animatable(1f) }
     val indicatorScaleY = remember { Animatable(1f) }
     val pressProgress = remember { Animatable(0f) }
@@ -190,16 +192,19 @@ fun FloatingDock(
             )
         }
     }
-    LaunchedEffect(pressed) {
-        if (pressed) {
-            launch { indicatorScaleX.animateTo(DockIndicatorPressScale, spring(0.6f, 250f)) }
-            launch { indicatorScaleY.animateTo(DockIndicatorPressScale, spring(0.7f, 250f)) }
-            launch { pressProgress.animateTo(1f, spring(dampingRatio = 1f, stiffness = 1000f)) }
-        } else {
-            launch { indicatorScaleX.animateTo(1f, spring(0.6f, 250f)) }
-            launch { indicatorScaleY.animateTo(1f, spring(0.7f, 250f)) }
-            launch { pressProgress.animateTo(0f, spring(dampingRatio = 1f, stiffness = 1000f)) }
-        }
+    // 任意槽位按下 → 壳 bloom（按壳宽比例整体放大）
+    LaunchedEffect(pressedIndex >= 0) {
+        pressProgress.animateTo(
+            targetValue = if (pressedIndex >= 0) 1f else 0f,
+            animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
+        )
+    }
+    // 仅按下当前选中项（含拖拽层按下）→ 指示器 56→78dp bloom
+    val indicatorPressed = pressedIndex == currentPosition
+    LaunchedEffect(indicatorPressed) {
+        val target = if (indicatorPressed) DockIndicatorPressScale else 1f
+        launch { indicatorScaleX.animateTo(target, spring(0.6f, 250f)) }
+        launch { indicatorScaleY.animateTo(target, spring(0.7f, 250f)) }
     }
 
     // 未选中色：高对比主前景色（浅色近黑 / 夜间近白），避免浅色下过淡看不清
@@ -293,8 +298,9 @@ fun FloatingDock(
                     )
             )
 
-            // 选中指示器（可越界 bloom，跟随拖拽）
+            // 选中指示器（可越界 bloom，跟随拖拽；垂直居中，上下各留 4dp）
             DockIndicator(
+                modifier = Modifier.align(Alignment.CenterStart),
                 positionPx = innerPaddingPx + dragPosition.value * slotWidthPx,
                 widthPx = slotWidthPx,
                 pressedScaleX = indicatorScaleX.value,
@@ -310,9 +316,6 @@ fun FloatingDock(
                     .fillMaxSize()
                     .padding(horizontal = DockInnerHorizontalPadding)
                     .graphicsLayer {
-                        val s = 1f + DockTabPressScaleExtra * pressProgress.value
-                        scaleX = s
-                        scaleY = s
                         translationX = panelOffsetPx()
                     },
             ) {
@@ -321,16 +324,23 @@ fun FloatingDock(
                         (1f - abs(index - dragPosition.value)).coerceIn(0f, 1f)
                     DockItem(
                         progress = itemProgress,
+                        pressed = pressedIndex == index,
                         icon = navigationItem.icon(),
                         title = navigationItem.title(index == currentPosition),
                         badge = navigationItem.badge,
                         badgeText = navigationItem.badgeText,
                         selectedColor = MaterialTheme.colors.secondary,
                         unselectedColor = unselectedColor,
-                        onPressedChange = {
-                            // 当前项的按压由拖拽手势层统一管理（拖出槽位不应提前结束按压反馈）
-                            if (index != currentPosition) {
-                                pressed = it
+                        onPressedChange = { isPressed ->
+                            if (isPressed) {
+                                // 当前项的按压由拖拽手势层统一管理（拖出槽位不应提前结束按压反馈）
+                                if (index != currentPosition) {
+                                    pressedIndex = index
+                                }
+                            } else if (!isDragging && pressedIndex == index) {
+                                // 松手复位：不能依赖 currentPosition 判断（点击切换后它已变为新值，
+                                // 会把复位拦截导致按压态永久卡住）；拖拽中由手势层接管按压反馈
+                                pressedIndex = -1
                             }
                         },
                         onClick = {
@@ -365,7 +375,8 @@ fun FloatingDock(
                         if (itemCount <= 1) return@pointerInput
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
-                            pressed = true
+                            // 拖拽起点即当前选中项：按下反馈（指示器 bloom + 起点图标放大）保持到松手
+                            pressedIndex = currentPositionLatest.value
                             isDragging = true
                             velocityTracker.resetTracking()
                             var pointerId = down.id
@@ -375,12 +386,12 @@ fun FloatingDock(
                                 val change = event.changes.fastFirstOrNull { it.id == pointerId }
                                 if (change == null) {
                                     // 手势被系统中断：复位按压/拖拽状态，不触发切换
-                                    pressed = false
+                                    pressedIndex = -1
                                     isDragging = false
                                     break
                                 }
                                 if (change.changedToUpIgnoreConsumed()) {
-                                    pressed = false
+                                    pressedIndex = -1
                                     isDragging = false
                                     val target =
                                         dragPosition.value.roundToInt().coerceIn(0, maxIndex)
@@ -463,6 +474,7 @@ fun FloatingDock(
 
 @Composable
 private fun DockIndicator(
+    modifier: Modifier = Modifier,
     positionPx: Float,
     widthPx: Float,
     pressedScaleX: Float,
@@ -473,7 +485,7 @@ private fun DockIndicator(
 ) {
     val indicatorColor = if (isNightMode) Color.White else Color.Black
     Box(
-        modifier = Modifier
+        modifier = modifier
             .offset {
                 IntOffset((positionPx + panelOffsetPx()).roundToInt(), 0)
             }
@@ -502,6 +514,7 @@ private fun DockIndicator(
 @Composable
 private fun DockItem(
     progress: Float,
+    pressed: Boolean,
     icon: AnimatedImageVector,
     title: String,
     badge: Boolean,
@@ -516,8 +529,17 @@ private fun DockItem(
     val hapticFeedback = LocalHapticFeedback.current
     var lastClickTime by remember { mutableLongStateOf(0L) }
     val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    LaunchedEffect(pressed) { onPressedChange(pressed) }
+    val interactionPressed by interactionSource.collectIsPressedAsState()
+    LaunchedEffect(interactionPressed) { onPressedChange(interactionPressed) }
+
+    // 被按下的条目图标单独放大（spring，与其他条目互不影响）
+    val iconScale = remember { Animatable(1f) }
+    LaunchedEffect(pressed) {
+        iconScale.animateTo(
+            targetValue = if (pressed) 1f + DockTabPressScaleExtra else 1f,
+            animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
+        )
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -546,7 +568,12 @@ private fun DockItem(
                 ),
                 contentDescription = title,
                 tint = color,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier
+                    .size(24.dp)
+                    .graphicsLayer {
+                        scaleX = iconScale.value
+                        scaleY = iconScale.value
+                    },
             )
             if (badge) {
                 Text(

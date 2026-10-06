@@ -55,6 +55,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -121,6 +122,21 @@ private val DockBlurRadius = 10.dp
 /** 壳底色透明度：有模糊时更低（让模糊透出），无模糊时更高（替代纯色）。 */
 private const val DockSurfaceAlphaBlur = 0.50f
 private const val DockSurfaceAlphaFallback = 0.88f
+
+/** 壳外圈微光晕描边总宽（居中描边，外半越出胶囊边界成光晕）。 */
+private val DockHaloWidth = 5.dp
+
+/** 壳轮廓高光线宽度（顶部高光弧 / 底部反光弧）。 */
+private val DockRimWidth = 1.5.dp
+
+/** 壳轮廓内侧光带宽度（玻璃内散光，低 alpha 同渐变）。 */
+private val DockRimGlowWidth = 3.dp
+
+/** 指示器轮廓高光线宽度。 */
+private val DockIndicatorRimWidth = 1.dp
+
+/** 指示器轮廓内侧光带宽度。 */
+private val DockIndicatorRimGlowWidth = 2.dp
 
 /**
  * 指示器速度形变：速度口径为「归一化槽位速度」（槽位/秒 ÷ (count-1)）。
@@ -239,12 +255,31 @@ fun FloatingDock(
             }
 
             val shape = CircleShape
+            val isNight = themeColors.isNightMode
             val surfaceTint = themeColors.bottomBarSurface.copy(
                 alpha = if (blurSupported) DockSurfaceAlphaBlur else DockSurfaceAlphaFallback
             )
-            val shadowAlpha = if (themeColors.isNightMode) 0.22f else 0.10f
-            val rimTopAlpha = if (themeColors.isNightMode) 0.18f else 0.55f
-            val rimBottomAlpha = if (themeColors.isNightMode) 0.05f else 0.12f
+            val shadowAlpha = if (isNight) 0.22f else 0.13f
+            // 双峰轮廓光：顶部高光弧（白）；底部次级弧——浅色下用暗边勾勒边界（白线在近白背景上不可见），
+            // 夜间/AMOLED 用次级白色反光
+            val rimTopAlpha = if (isNight) 0.22f else 0.90f
+            val rimBottomColor = if (isNight) Color.White else Color.Black
+            val rimBottomAlpha = if (isNight) 0.10f else 0.14f
+            // 外圈微光晕：浅色贴边暗晕勾勒边界，夜间贴边发光
+            val haloColor = if (isNight) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.06f)
+            // 4 色标双峰渐变（中段两端全透明，避免非预乘插值出脏灰）
+            val rimBrush = Brush.verticalGradient(
+                0f to Color.White.copy(alpha = rimTopAlpha),
+                0.35f to Color.White.copy(alpha = 0f),
+                0.65f to rimBottomColor.copy(alpha = 0f),
+                1f to rimBottomColor.copy(alpha = rimBottomAlpha),
+            )
+            val rimGlowBrush = Brush.verticalGradient(
+                0f to Color.White.copy(alpha = rimTopAlpha * 0.25f),
+                0.35f to Color.White.copy(alpha = 0f),
+                0.65f to rimBottomColor.copy(alpha = 0f),
+                1f to rimBottomColor.copy(alpha = rimBottomAlpha * 0.25f),
+            )
 
             // 壳按压 bloom：按壳宽比例整体放大（含投影；draw phase 读取进度避免整树重组）
             val pressBloomPx = with(density) { DockPressBloomDp.toPx() }
@@ -267,6 +302,14 @@ fun FloatingDock(
                         ambientColor = Color.Black.copy(alpha = shadowAlpha),
                         spotColor = Color.Black.copy(alpha = shadowAlpha),
                     )
+                    .drawBehind {
+                        // 外圈微光晕：居中描边，外半越出胶囊边界；内半被壳层覆盖
+                        drawRoundRect(
+                            color = haloColor,
+                            cornerRadius = CornerRadius(size.height / 2f),
+                            style = Stroke(width = DockHaloWidth.toPx()),
+                        )
+                    }
                     .clip(shape)
                     .then(
                         if (blurSupported) {
@@ -286,16 +329,8 @@ fun FloatingDock(
                         } else Modifier
                     )
                     .background(surfaceTint)
-                    .border(
-                        width = 1.dp,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = rimTopAlpha),
-                                Color.White.copy(alpha = rimBottomAlpha)
-                            )
-                        ),
-                        shape = shape,
-                    )
+                    .border(width = DockRimGlowWidth, brush = rimGlowBrush, shape = shape)
+                    .border(width = DockRimWidth, brush = rimBrush, shape = shape)
             )
 
             // 选中指示器（可越界 bloom，跟随拖拽；垂直居中，上下各留 4dp）
@@ -484,6 +519,22 @@ private fun DockIndicator(
     isNightMode: Boolean,
 ) {
     val indicatorColor = if (isNightMode) Color.White else Color.Black
+    // 双峰轮廓光：顶部高光 + 底部次级弧（浅色下用暗边勾勒边界）
+    val rimTopAlpha = if (isNightMode) 0.20f else 0.55f
+    val rimBottomColor = if (isNightMode) Color.White else Color.Black
+    val rimBottomAlpha = if (isNightMode) 0.08f else 0.10f
+    val rimBrush = Brush.verticalGradient(
+        0f to Color.White.copy(alpha = rimTopAlpha),
+        0.35f to Color.White.copy(alpha = 0f),
+        0.65f to rimBottomColor.copy(alpha = 0f),
+        1f to rimBottomColor.copy(alpha = rimBottomAlpha),
+    )
+    val rimGlowBrush = Brush.verticalGradient(
+        0f to Color.White.copy(alpha = rimTopAlpha * 0.2f),
+        0.35f to Color.White.copy(alpha = 0f),
+        0.65f to rimBottomColor.copy(alpha = 0f),
+        1f to rimBottomColor.copy(alpha = rimBottomAlpha * 0.2f),
+    )
     Box(
         modifier = modifier
             .offset {
@@ -502,9 +553,20 @@ private fun DockIndicator(
             .drawBehind {
                 val bloomProgress =
                     ((pressedScaleX - 1f) / (DockIndicatorPressScale - 1f)).coerceIn(0f, 1f)
+                val cornerRadius = CornerRadius(size.height / 2f)
                 drawRoundRect(
                     color = indicatorColor.copy(alpha = 0.10f + 0.03f * bloomProgress),
-                    cornerRadius = CornerRadius(size.height / 2f),
+                    cornerRadius = cornerRadius,
+                )
+                drawRoundRect(
+                    brush = rimGlowBrush,
+                    cornerRadius = cornerRadius,
+                    style = Stroke(width = DockIndicatorRimGlowWidth.toPx()),
+                )
+                drawRoundRect(
+                    brush = rimBrush,
+                    cornerRadius = cornerRadius,
+                    style = Stroke(width = DockIndicatorRimWidth.toPx()),
                 )
             }
     )

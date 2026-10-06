@@ -139,6 +139,12 @@ private val DockIndicatorRimWidth = 1.dp
 private val DockIndicatorRimGlowWidth = 2.dp
 
 /**
+ * 指示器视觉居中补偿：浅色下底部暗边描边醒目、顶部白描边融入壳色不可见，
+ * 视觉重心下沉；几何上移少许抵消，使色块的视觉边界上下对称。
+ */
+private val DockIndicatorVisualLift = 0.5.dp
+
+/**
  * 指示器速度形变：速度口径为「归一化槽位速度」（槽位/秒 ÷ (count-1)）。
  * 快速切换/拖拽时 scaleX 拉伸 / scaleY 压扁（约 ±20% 封顶），静止时无形变。
  */
@@ -333,9 +339,11 @@ fun FloatingDock(
                     .border(width = DockRimWidth, brush = rimBrush, shape = shape)
             )
 
-            // 选中指示器（可越界 bloom，跟随拖拽；垂直居中，上下各留 4dp）
+            // 选中指示器（可越界 bloom，跟随拖拽；视觉居中，几何上移补偿描边不对称）
             DockIndicator(
-                modifier = Modifier.align(Alignment.CenterStart),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(y = -DockIndicatorVisualLift),
                 positionPx = innerPaddingPx + dragPosition.value * slotWidthPx,
                 widthPx = slotWidthPx,
                 pressedScaleX = indicatorScaleX.value,
@@ -519,10 +527,10 @@ private fun DockIndicator(
     isNightMode: Boolean,
 ) {
     val indicatorColor = if (isNightMode) Color.White else Color.Black
-    // 双峰轮廓光：顶部高光 + 底部次级弧（浅色下用暗边勾勒边界）
+    // 双峰轮廓光：顶部高光 + 底部次级弧（浅色下底部用极淡暗边勾边——过重会使色块视觉重心下沉）
     val rimTopAlpha = if (isNightMode) 0.20f else 0.55f
     val rimBottomColor = if (isNightMode) Color.White else Color.Black
-    val rimBottomAlpha = if (isNightMode) 0.08f else 0.10f
+    val rimBottomAlpha = if (isNightMode) 0.08f else 0.05f
     val rimBrush = Brush.verticalGradient(
         0f to Color.White.copy(alpha = rimTopAlpha),
         0.35f to Color.White.copy(alpha = 0f),

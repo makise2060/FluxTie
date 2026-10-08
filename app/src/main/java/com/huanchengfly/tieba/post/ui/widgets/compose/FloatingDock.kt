@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -123,8 +124,15 @@ private val DockBlurRadius = 10.dp
 private const val DockSurfaceAlphaBlur = 0.50f
 private const val DockSurfaceAlphaFallback = 0.88f
 
-/** 壳外圈微光晕描边总宽（居中描边，外半越出胶囊边界成光晕）。 */
-private val DockHaloWidth = 5.dp
+/**
+ * 外圈微光晕分层（宽度 dp, alpha 系数）：多层同心描边、系数向外指数递减，
+ * 合成自边界向外柔和淡出的渐变光晕（单层实线描边会形成硬边「套圈」观感）。
+ * 每层绘制于胶囊外扩轮廓上，恰好只覆盖边界外侧 [0, width]，不含内侧残留。
+ */
+private val DockHaloLayers = listOf(
+    0.75f to 0.30f, 1.5f to 0.22f, 2.25f to 0.16f, 3f to 0.117f,
+    3.75f to 0.085f, 4.5f to 0.062f, 5.25f to 0.045f, 6f to 0.033f,
+)
 
 /** 壳轮廓高光线宽度（顶部高光弧 / 底部反光弧）。 */
 private val DockRimWidth = 1.5.dp
@@ -138,8 +146,11 @@ private val DockIndicatorRimWidth = 1.dp
 /** 指示器轮廓内侧光带宽度。 */
 private val DockIndicatorRimGlowWidth = 2.dp
 
-/** 指示器外圈微光晕描边总宽（居中描边，外半越出胶囊边界成光晕；壳同款，指示器略窄）。 */
-private val DockIndicatorHaloWidth = 4.dp
+/** 指示器外圈微光晕分层（壳同款技法，层数略少、跨度略窄）。 */
+private val DockIndicatorHaloLayers = listOf(
+    0.75f to 0.30f, 1.5f to 0.22f, 2.25f to 0.16f, 3f to 0.117f,
+    3.75f to 0.085f, 4.5f to 0.062f,
+)
 
 /**
  * 指示器视觉居中补偿：底部暗边叠在页面背景上、顶部高光叠在玻璃材质上，
@@ -312,12 +323,19 @@ fun FloatingDock(
                         spotColor = Color.Black.copy(alpha = shadowAlpha),
                     )
                     .drawBehind {
-                        // 外圈微光晕：居中描边，外半越出胶囊边界；内半被壳层覆盖
-                        drawRoundRect(
-                            color = haloColor,
-                            cornerRadius = CornerRadius(size.height / 2f),
-                            style = Stroke(width = DockHaloWidth.toPx()),
-                        )
+                        // 外圈微光晕：多层同心描边向外递减合成柔和渐变光晕；
+                        // 每层绘制于外扩轮廓上，恰好只覆盖边界外侧（无内侧残留暗线）
+                        DockHaloLayers.forEach { (widthDp, factor) ->
+                            val wPx = widthDp.dp.toPx()
+                            val half = wPx / 2f
+                            drawRoundRect(
+                                color = haloColor.copy(alpha = haloColor.alpha * factor),
+                                topLeft = Offset(-half, -half),
+                                size = Size(size.width + wPx, size.height + wPx),
+                                cornerRadius = CornerRadius(size.height / 2f + half),
+                                style = Stroke(width = wPx),
+                            )
+                        }
                     }
                     .clip(shape)
                     .then(
@@ -577,12 +595,19 @@ private fun DockIndicator(
                 scaleY = pressedScaleY * (1f - termY)
             }
             .drawBehind {
-                // 外圈微光晕：居中描边，外半越出胶囊边界；内半被下方绘制覆盖
-                drawRoundRect(
-                    color = haloColor,
-                    cornerRadius = CornerRadius(size.height / 2f),
-                    style = Stroke(width = DockIndicatorHaloWidth.toPx()),
-                )
+                // 外圈微光晕：多层同心描边向外递减（壳同款，避免单层实线「套圈」感）；
+                // 每层绘制于外扩轮廓上，恰好只覆盖边界外侧
+                DockIndicatorHaloLayers.forEach { (widthDp, factor) ->
+                    val wPx = widthDp.dp.toPx()
+                    val half = wPx / 2f
+                    drawRoundRect(
+                        color = haloColor.copy(alpha = haloColor.alpha * factor),
+                        topLeft = Offset(-half, -half),
+                        size = Size(size.width + wPx, size.height + wPx),
+                        cornerRadius = CornerRadius(size.height / 2f + half),
+                        style = Stroke(width = wPx),
+                    )
+                }
             }
             .clip(shape)
             .then(

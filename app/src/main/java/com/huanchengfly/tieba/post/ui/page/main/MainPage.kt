@@ -62,6 +62,7 @@ import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.emitGlobalEvent
 import com.huanchengfly.tieba.post.arch.pageViewModel
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
+import com.huanchengfly.tieba.post.ui.common.anim.MotionTokens
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowHeightSizeClass
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
@@ -400,8 +401,8 @@ fun MainPage(
                         AnimatedContent(
                             targetState = safeCurrentPosition,
                             transitionSpec = {
-                                (fadeIn(tween(durationMillis = 220, delayMillis = 60, easing = EaseOutCubic)) togetherWith
-                                        fadeOut(tween(durationMillis = 140, easing = EaseInCubic)))
+                                (fadeIn(tween(durationMillis = MotionTokens.DurationNormal, delayMillis = 60, easing = MotionTokens.EasingEnter)) togetherWith
+                                        fadeOut(tween(durationMillis = MotionTokens.DurationExit, easing = MotionTokens.EasingExit)))
                             },
                             label = "mainPageContent",
                             modifier = Modifier

@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
 import androidx.compose.animation.core.animateFloatAsState
+import com.huanchengfly.tieba.post.ui.common.anim.MotionTokens
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -59,7 +60,7 @@ fun Switch(
     var dragFraction by remember { mutableStateOf<Float?>(null) }
     val fraction by animateFloatAsState(
         targetValue = if (checked) 1f else 0f,
-        animationSpec = tween(durationMillis = 150)
+        animationSpec = tween(durationMillis = MotionTokens.DurationFast)
     )
     val toggleableModifier =
         if (onCheckedChange != null) {

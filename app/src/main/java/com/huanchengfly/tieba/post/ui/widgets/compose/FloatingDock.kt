@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEachIndexed
+import com.huanchengfly.tieba.post.ui.common.anim.MotionTokens
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
@@ -245,7 +246,7 @@ fun FloatingDock(
         if (!isDragging) {
             dragPosition.animateTo(
                 targetValue = currentPosition.coerceIn(0, maxIndex).toFloat(),
-                animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
+                animationSpec = MotionTokens.springSnap(),
             )
         }
     }

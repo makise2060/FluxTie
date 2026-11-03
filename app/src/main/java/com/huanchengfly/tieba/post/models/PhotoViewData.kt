@@ -28,6 +28,8 @@ data class PicItem(
     val postId: Long? = null,
     val width: Int = 0,
     val height: Int = 0,
+    /** 图片所在楼层（帖子详情内的图片才有，0 表示未知），用于「查看楼层」跳转 */
+    val floor: Int = 0,
 ) : Parcelable
 
 @Immutable

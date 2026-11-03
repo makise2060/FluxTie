@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.utils.appPreferences
 import androidx.core.graphics.drawable.toBitmap
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import kotlinx.coroutines.delay
@@ -119,6 +120,7 @@ private val FluidBuoyancyEasing = CubicBezierEasing(0.18f, 1.0f, 0.22f, 1.0f)
 fun AppSplashOverlay() {
     var visible by remember { mutableStateOf(true) }
     var isHeaderStage by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     // 1. 一镜到底核心动效：Logo 伴随流体浮力曲线升腾（-142dp）并等比收敛至 83dp
     val logoTranslateY by animateDpAsState(
@@ -200,14 +202,20 @@ fun AppSplashOverlay() {
         while (!SplashState.systemSplashDismissed.value && (System.currentTimeMillis() - waitStart) < 3000L) {
             delay(40)
         }
+        // 关闭启动屏动画时：系统启动屏揭开后直接退场，只保留交接遮罩作用（秒进主页）
+        if (!context.appPreferences.splashAnimationEnabled) {
+            visible = false
+            SplashState.finished.value = true
+            return@LaunchedEffect
+        }
         // 系统揭开透明遮罩后，在中心短暂稳定停留 100ms 确保视觉零顿挫，随后启动一镜到底升腾
         delay(100)
         isHeaderStage = true
         val animStart = System.currentTimeMillis()
 
-        // 循环播放直到：加载完成且达到最短展示时长（1400ms 保证一镜到底完整呈现）；3.5s 超时兜底
-        val minDuration = 1400L
-        val timeout = 3500L
+        // 循环播放直到：加载完成且达到最短展示时长（1000ms 保证一镜到底完整呈现）；3s 超时兜底
+        val minDuration = 1000L
+        val timeout = 3000L
         while (true) {
             val elapsed = System.currentTimeMillis() - animStart
             if ((SplashState.ready.value && elapsed >= minDuration) || elapsed >= timeout) break

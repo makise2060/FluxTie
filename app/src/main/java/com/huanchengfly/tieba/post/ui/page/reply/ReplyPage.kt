@@ -625,32 +625,30 @@ internal fun ReplyPageContent(
                     modifier = Modifier.size(24.dp)
                 )
             }
-            if (postId == null || postId == 0L) {
-                IconButton(
-                    onClick = { switchToPanel(IMAGE) },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    BadgedBox(
-                        badge = {
-                            if (selectedImageList.isNotEmpty()) {
-                                Badge(
-                                    backgroundColor = ExtendedTheme.colors.accent,
-                                    contentColor = ExtendedTheme.colors.background,
-                                ) {
-                                    Text(
-                                        text = "${selectedImageList.size}",
-                                        style = MaterialTheme.typography.caption
-                                    )
-                                }
+            IconButton(
+                onClick = { switchToPanel(IMAGE) },
+                modifier = Modifier.size(24.dp)
+            ) {
+                BadgedBox(
+                    badge = {
+                        if (selectedImageList.isNotEmpty()) {
+                            Badge(
+                                backgroundColor = ExtendedTheme.colors.accent,
+                                contentColor = ExtendedTheme.colors.background,
+                            ) {
+                                Text(
+                                    text = "${selectedImageList.size}",
+                                    style = MaterialTheme.typography.caption
+                                )
                             }
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.InsertPhoto,
-                            contentDescription = stringResource(id = R.string.insert_photo),
-                            modifier = Modifier.size(24.dp)
-                        )
                     }
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.InsertPhoto,
+                        contentDescription = stringResource(id = R.string.insert_photo),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 //            IconButton(

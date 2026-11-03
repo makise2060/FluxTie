@@ -445,6 +445,7 @@ class PermissionRequester(val context: Context) {
     var unchecked: Boolean = false
     var onGranted: (() -> Unit)? = null
     var onDenied: (() -> Unit)? = null
+    var onCancel: (() -> Unit)? = null
 
     fun start() {
         val permissionList = permissions.map { it.toIPermission() }
@@ -479,6 +480,7 @@ class PermissionRequester(val context: Context) {
                     }
                     .request(callback)
             }
+            onCancel = { this@PermissionRequester.onCancel?.invoke() }
         }.show()
     }
 }

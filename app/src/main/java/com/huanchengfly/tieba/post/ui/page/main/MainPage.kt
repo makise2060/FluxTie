@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseInCubic
 import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -37,10 +39,18 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.widgets.compose.DockAutoHideTranslate
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.huanchengfly.tieba.post.LocalDevicePosture
@@ -78,6 +88,7 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 
 @Composable
@@ -239,6 +250,9 @@ fun MainPage(
             ).toImmutableList()
         }
     }
+    // hideExplore 变化或进程恢复时 currentPosition 可能短暂越界（如保存了 3 但列表已缩到 3 项），
+    // 复位 LaunchedEffect 要到组合之后才跑；所有读取统一走安全夹取，避免绘制期越界闪退（issue #8）
+    val safeCurrentPosition = currentPosition.coerceIn(0, navigationItems.lastIndex)
     val navigationType by remember {
         derivedStateOf {
             when (windowWidthSizeClass) {
@@ -289,7 +303,7 @@ fun MainPage(
     }
     val onReselected: (Int) -> Unit = {
         coroutineScope.emitGlobalEvent(
-            GlobalEvent.Refresh(key = navigationItems[it].id)
+            GlobalEvent.Refresh(key = navigationItems[it.coerceIn(0, navigationItems.lastIndex)].id)
         )
     }
     val floatingBottomNav by rememberPreferenceAsState(
@@ -306,9 +320,44 @@ fun MainPage(
     // 导航栏区域需在此统一补足:呼吸位 = 胶囊高 + 底边距 + 呼吸(84dp) + 系统导航栏,
     // 列表末项才能完整滚出胶囊,加载提示胶囊也停在这条线上。
     val navigationBarsInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // 滚动自动隐藏悬浮底栏：列表上滑（内容下滚）收起、下滑（回滚）唤出（issue #16）
+    val autoHideBottomBar by rememberPreferenceAsState(
+        key = booleanPreferencesKey("auto_hide_bottom_bar"),
+        defaultValue = LocalContext.current.appPreferences.autoHideBottomBar
+    )
+    val dockAutoHide = floatingLayout && autoHideBottomBar
+    var dockHiddenByScroll by remember { mutableStateOf(false) }
+    val dockAutoHideConnection = remember {
+        object : NestedScrollConnection {
+            // 拖拽相位：拖动方向直接判定（onPostScroll 只收未消费的过滚动量，接不到正常滚动）
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (available.y < -3f) dockHiddenByScroll = true
+                else if (available.y > 3f) dockHiddenByScroll = false
+                return Offset.Zero
+            }
+
+            // 甩动相位：惯性速度方向判定（fling 不逐帧走 preScroll）
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                if (available.y < -100f) dockHiddenByScroll = true
+                else if (available.y > 100f) dockHiddenByScroll = false
+                return Velocity.Zero
+            }
+        }
+    }
+    // 切换底部标签时唤出底栏，避免新列表带着隐藏状态出现
+    LaunchedEffect(safeCurrentPosition) {
+        dockHiddenByScroll = false
+    }
+    val density = LocalDensity.current
+    val dockHideTranslatePx = with(density) { (DockAutoHideTranslate + navigationBarsInset).toPx() }
+    val dockHideProgress by animateFloatAsState(
+        targetValue = if (dockHiddenByScroll) 1f else 0f,
+        animationSpec = tween(durationMillis = 220, easing = EaseOutCubic),
+        label = "dockHideProgress"
+    )
     ProvideNavigator(navigator = navigator) {
         NavigationWrapper(
-            currentPosition = currentPosition,
+            currentPosition = safeCurrentPosition,
             onChangePosition = onChangePosition,
             onReselected = onReselected,
             navigationItems = navigationItems,
@@ -330,7 +379,7 @@ fun MainPage(
                             visible = navigationType == MainNavigationType.BOTTOM_NAVIGATION && !floatingBottomNav
                         ) {
                             BottomNavigation(
-                                currentPosition = currentPosition,
+                                currentPosition = safeCurrentPosition,
                                 onChangePosition = onChangePosition,
                                 onReselected = onReselected,
                                 navigationItems = navigationItems,
@@ -339,9 +388,17 @@ fun MainPage(
                         }
                     }
                 ) { paddingValues ->
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (dockAutoHide) {
+                                    Modifier.nestedScroll(dockAutoHideConnection)
+                                } else Modifier
+                            )
+                    ) {
                         AnimatedContent(
-                            targetState = currentPosition,
+                            targetState = safeCurrentPosition,
                             transitionSpec = {
                                 (fadeIn(tween(durationMillis = 220, delayMillis = 60, easing = EaseOutCubic)) togetherWith
                                         fadeOut(tween(durationMillis = 140, easing = EaseInCubic)))
@@ -355,16 +412,23 @@ fun MainPage(
                                     } else Modifier
                                 ),
                         ) { page ->
+                            val safePage = page.coerceIn(0, navigationItems.lastIndex)
                             Box(modifier = Modifier.padding(paddingValues)) {
-                                saveableStateHolder.SaveableStateProvider(navigationItems[page].id) {
-                                    navigationItems[page].content()
+                                saveableStateHolder.SaveableStateProvider(navigationItems[safePage].id) {
+                                    navigationItems[safePage].content()
                                 }
                             }
                         }
                         if (floatingLayout) {
-                            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .offset {
+                                        IntOffset(0, (dockHideTranslatePx * dockHideProgress).roundToInt())
+                                    }
+                            ) {
                                 FloatingDock(
-                                    currentPosition = currentPosition,
+                                    currentPosition = safeCurrentPosition,
                                     onChangePosition = onChangePosition,
                                     onReselected = onReselected,
                                     navigationItems = navigationItems,

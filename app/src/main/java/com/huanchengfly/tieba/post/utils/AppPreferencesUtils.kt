@@ -79,6 +79,36 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         key = "auto_check_update"
     )
 
+    // 滚动时自动隐藏悬浮底栏（上滑隐藏、下滑出现）
+    var autoHideBottomBar by DataStoreDelegates.boolean(
+        defaultValue = true,
+        key = "auto_hide_bottom_bar"
+    )
+
+    // 退出应用时自动清理图片缓存
+    var clearCacheOnExit by DataStoreDelegates.boolean(
+        defaultValue = false,
+        key = "clear_cache_on_exit"
+    )
+
+    // 信息流紧凑卡片：收窄卡片留白与列表间距，单屏容纳更多内容
+    var compactFeedCard by DataStoreDelegates.boolean(
+        defaultValue = false,
+        key = "compact_feed_card"
+    )
+
+    // 信息流卡片头部显示所在吧名（原版贴吧模式），关闭时显示作者昵称
+    var feedCardShowForumName by DataStoreDelegates.boolean(
+        defaultValue = false,
+        key = "feed_card_show_forum_name"
+    )
+
+    // 启动屏一镜到底动画（关闭则系统启动屏揭开后直接进主页）
+    var splashAnimationEnabled by DataStoreDelegates.boolean(
+        defaultValue = true,
+        key = "splash_animation_enabled"
+    )
+
     var ignoredUpdateVersion by DataStoreDelegates.string(key = "ignored_update_version")
 
     var updateCheckCache by DataStoreDelegates.string(key = "update_check_cache")

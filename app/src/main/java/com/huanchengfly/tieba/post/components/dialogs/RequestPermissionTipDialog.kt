@@ -19,9 +19,13 @@ class RequestPermissionTipDialog(context: Context, permission: PermissionUtils.P
     /** 用户点击"去授权"后回调，此时才发起真正的系统权限请求 */
     var onConfirm: (() -> Unit)? = null
 
+    /** 用户取消/关闭说明弹窗时回调（区分于系统权限请求被拒绝） */
+    var onCancel: (() -> Unit)? = null
+
     init {
         setCancelable(true)
         setCanceledOnTouchOutside(true)
+        setOnCancelListener { onCancel?.invoke() }
         setView(View.inflate(context, R.layout.dialog_request_permission_tip, null).also {
             title = it.findViewById(R.id.request_permission_tip_dialog_title)
             message = it.findViewById(R.id.request_permission_tip_dialog_message)

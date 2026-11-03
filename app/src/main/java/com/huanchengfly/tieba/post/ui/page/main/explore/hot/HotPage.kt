@@ -59,6 +59,7 @@ import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestinati
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullRefreshLogoIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
+import com.huanchengfly.tieba.post.ui.widgets.compose.feedCardListSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
@@ -115,7 +116,7 @@ fun HotPage(
         onRefresh = { viewModel.send(HotUiIntent.Load) })
     Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
         MyLazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(feedCardListSpacing()),
             contentPadding = PaddingValues(top = 4.dp, bottom = LocalMainBottomInsets.current),
             modifier = Modifier
                 .fillMaxWidth(),

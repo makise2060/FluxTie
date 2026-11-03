@@ -112,6 +112,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.UpdateDialogHost
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.ClientUtils
+import com.huanchengfly.tieba.post.utils.ImageCacheUtil
 import com.huanchengfly.tieba.post.utils.JobServiceUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
@@ -135,6 +136,7 @@ import com.ramcosta.composedestinations.utils.currentDestinationFlow
 import com.ramcosta.composedestinations.utils.toDestinationsNavigator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -142,8 +144,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import com.huanchengfly.tieba.post.dataStore
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -267,14 +271,23 @@ class MainActivityV2 : BaseComposeActivity() {
             true
         } else return if (intent.data?.host == "tieba.baidu.com") {
             val uri = intent.data!!
+            val path = uri.path.orEmpty().lowercase()
             when {
-                uri.path.orEmpty().lowercase() == "/f" -> {
+                path == "/f" -> {
                     val forumName = uri.getQueryParameter("kw") ?: return true
                     navigate(ForumPageDestination(forumName))
                 }
 
-                uri.path.orEmpty().lowercase().startsWith("/p/") -> {
+                path.startsWith("/p/") -> {
                     val threadId = uri.pathSegments.getOrNull(1)?.toLongOrNull() ?: return true
+                    navigate(ThreadPageDestination(threadId))
+                }
+
+                // 移动端跳转形态：/p?kz=<tid>、/mo/q/m?kz=<tid>（issue #19）
+                path == "/p" || path == "/mo/q/m" -> {
+                    val threadId = uri.getQueryParameter("kz")?.toLongOrNull()
+                        ?: uri.getQueryParameter("tid")?.toLongOrNull()
+                        ?: return true
                     navigate(ThreadPageDestination(threadId))
                 }
             }
@@ -315,18 +328,23 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AccountUtil.isLoggedIn()) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || !AccountUtil.isLoggedIn()) return
+        launch {
+            // 用户拒绝过就不再主动请求（issue #24），需要时到系统设置里开启
+            val denied = dataStore.data.first()[booleanPreferencesKey("notification_permission_denied")] ?: false
+            if (denied) return@launch
             requestPermission {
                 permissions = listOf(PermissionUtils.POST_NOTIFICATIONS)
                 description = getString(R.string.desc_permission_post_notifications)
+                onGranted = {
+                    // 曾拒绝后又授权，重置标记以便再次拒绝时仍能提示
+                    dataStore.putBoolean("notification_permission_denied", false)
+                }
                 onDenied = {
-                    // 系统不再弹窗（曾选"拒绝且不再询问"）时引导用户去设置开启
-                    runCatching {
-                        val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
-                        }
-                        startActivity(intent)
-                    }
+                    dataStore.putBoolean("notification_permission_denied", true)
+                }
+                onCancel = {
+                    dataStore.putBoolean("notification_permission_denied", true)
                 }
             }
         }
@@ -397,6 +415,16 @@ class MainActivityV2 : BaseComposeActivity() {
         super.onCreateContent(systemUiController)
         fetchAccount()
         initAutoSign()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing && appPreferences.clearCacheOnExit) {
+            // 退出时后台清理图片缓存（尽力而为，进程存活期间完成；issue #26）
+            CoroutineScope(Dispatchers.IO).launch {
+                runCatching { ImageCacheUtil.clearImageAllCache(applicationContext) }
+            }
+        }
     }
 
     private fun openClipBoardLink(link: ClipBoardLink) {

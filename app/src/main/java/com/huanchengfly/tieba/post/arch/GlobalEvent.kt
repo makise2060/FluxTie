@@ -59,6 +59,12 @@ sealed interface GlobalEvent : UiEvent {
         val resultCode: Int,
         val intent: Intent?,
     ) : GlobalEvent
+
+    /** 从图片查看器跳回帖子页指定楼层（issue #17） */
+    data class ScrollToPost(
+        val threadId: Long,
+        val postId: Long,
+    ) : GlobalEvent
 }
 
 private val globalEventSharedFlow: MutableSharedFlow<UiEvent> by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {

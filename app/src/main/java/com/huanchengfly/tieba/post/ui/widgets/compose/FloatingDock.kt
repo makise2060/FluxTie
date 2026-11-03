@@ -117,11 +117,11 @@ private val DockPressBloomDp = 16.dp
 /** 按下时条目内容放大比例（1 + 0.2）。 */
 private const val DockTabPressScaleExtra = 0.2f
 
-/** 毛玻璃模糊半径（平衡档）。 */
-private val DockBlurRadius = 10.dp
+/** 毛玻璃模糊半径：足够大才能把玻璃后的文字糊成色块，只留轮廓不留笔画（issue #7）。 */
+private val DockBlurRadius = 18.dp
 
-/** 壳底色透明度：有模糊时更低（让模糊透出），无模糊时更高（替代纯色）。 */
-private const val DockSurfaceAlphaBlur = 0.50f
+/** 壳底色透明度：有模糊时适度遮蔽（过透会把背景文字以近全清晰度透出、与图标叠字），无模糊时更高（替代纯色）。 */
+private const val DockSurfaceAlphaBlur = 0.68f
 private const val DockSurfaceAlphaFallback = 0.88f
 
 /**
@@ -171,6 +171,9 @@ private val DockRubberBand = 4.dp
 
 /** 背景模糊（RenderEffect / haze）需要 API 31+。 */
 fun supportsBackdropBlur(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+/** 底栏滚动自动隐藏的位移距离：胶囊高 + 底边距（调用方另加系统导航栏 inset）。 */
+internal val DockAutoHideTranslate = DockShellHeight + DockBottomMargin
 
 /**
  * 悬浮毛玻璃 Dock：64dp 全胶囊壳（背景模糊 + 高光 rim + 投影）+

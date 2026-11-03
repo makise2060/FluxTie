@@ -25,6 +25,8 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +54,8 @@ import com.stoyanvuchev.systemuibarstweaker.SystemUIBarsTweaker
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.retrofit.exception.getErrorMessage
 import com.huanchengfly.tieba.post.arch.BaseComposeActivityWithParcelable
+import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.emitGlobalEventSuspend
 import com.huanchengfly.tieba.post.models.PhotoViewData
 import com.huanchengfly.tieba.post.repository.MemeRepository
 import com.huanchengfly.tieba.post.toastShort
@@ -233,6 +237,30 @@ class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 val index = pagerState.currentPage
+                                val currentItem = items[index]
+                                // 查看楼层（issue #17）：仅帖子详情内打开的图片可跳回所在楼层
+                                if (loadPicPageData?.objType == "pb" &&
+                                    currentItem.postId != null && currentItem.postId != 0L
+                                ) {
+                                    IconButton(onClick = {
+                                        val threadId = loadPicPageData?.threadId ?: return@IconButton
+                                        val postId = currentItem.postId ?: return@IconButton
+                                        lifecycleScope.launch {
+                                            emitGlobalEventSuspend(
+                                                GlobalEvent.ScrollToPost(
+                                                    threadId = threadId,
+                                                    postId = postId
+                                                )
+                                            )
+                                            finish()
+                                        }
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Layers,
+                                            contentDescription = stringResource(id = R.string.title_view_floor)
+                                        )
+                                    }
+                                }
                                 if (totalAmount > 1) {
                                     val picIndex = items[index].overallIndex
                                     Text(
@@ -302,6 +330,18 @@ class PhotoViewActivity : BaseComposeActivityWithParcelable<PhotoViewData>() {
                                     Icon(
                                         imageVector = Icons.Rounded.Share,
                                         contentDescription = stringResource(id = R.string.title_share_pic)
+                                    )
+                                }
+                                // 保存全部（issue #6）：批量保存当前可见的全部原图（去重）
+                                IconButton(onClick = {
+                                    ImageUtil.downloadAll(
+                                        this@PhotoViewActivity,
+                                        items.map { it.originUrl }
+                                    )
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.SaveAlt,
+                                        contentDescription = stringResource(id = R.string.title_save_all_pics)
                                     )
                                 }
                                 IconButton(onClick = {

@@ -13,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.huanchengfly.tieba.post.MainActivityV2
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
+import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,6 +47,8 @@ class UpdateNotification @Inject constructor(
                 .setProgress(100, percent.coerceIn(0, 100), indeterminate)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
+                .setColor(ThemeUtils.getColorByAttr(context, R.attr.colorPrimary))
+                .setColorized(true)
                 .build()
         )
     }
@@ -71,6 +74,7 @@ class UpdateNotification @Inject constructor(
                 .setAutoCancel(true)
                 .setContentIntent(contentIntent)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setColor(ThemeUtils.getColorByAttr(context, R.attr.colorPrimary))
                 .build()
         )
     }

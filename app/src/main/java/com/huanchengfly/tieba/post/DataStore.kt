@@ -18,7 +18,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.preference.PreferenceDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -61,14 +60,20 @@ fun <T> rememberPreferenceAsMutableState(
 ): MutableState<T> {
     val dataStore = LocalContext.current.dataStore
     val state = remember { mutableStateOf(defaultValue) }
+    val loaded = remember { mutableStateOf(false) }
 
+    // 一次性读取初值，读盘完成后才放行写回，避免把默认值抢先落盘
     LaunchedEffect(Unit) {
-        dataStore.data.map { it[key] ?: defaultValue }.distinctUntilChanged()
-            .collect { state.value = it }
+        state.value = dataStore.data.first()[key] ?: defaultValue
+        loaded.value = true
     }
 
+    // 变更即写盘；不持续收集 data 回灌——快速连续写入时收集器会把中间值灌回 state，
+    // 造成开关状态回跳/颜色残留（issue #20）
     LaunchedEffect(state.value) {
-        dataStore.edit { it[key] = state.value }
+        if (loaded.value) {
+            dataStore.edit { it[key] = state.value }
+        }
     }
 
     return state
@@ -82,13 +87,9 @@ fun <T> rememberPreferenceAsState(
     val dataStore = LocalContext.current.dataStore
     val state = remember { mutableStateOf(defaultValue) }
 
+    // 纯读取：一次性读盘，不写回也不持续收集
     LaunchedEffect(Unit) {
-        dataStore.data.map { it[key] ?: defaultValue }.distinctUntilChanged()
-            .collect { state.value = it }
-    }
-
-    LaunchedEffect(state.value) {
-        dataStore.edit { it[key] = state.value }
+        state.value = dataStore.data.first()[key] ?: defaultValue
     }
 
     return state

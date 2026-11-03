@@ -903,9 +903,10 @@ fun ForumPage(
                                         ListSinglePicker(
                                             itemTitles = persistentListOf(
                                                 stringResource(id = R.string.title_sort_by_reply),
-                                                stringResource(id = R.string.title_sort_by_send)
+                                                stringResource(id = R.string.title_sort_by_send),
+                                                stringResource(id = R.string.title_sort_only_followed)
                                             ),
-                                            itemValues = persistentListOf(0, 1),
+                                            itemValues = persistentListOf(0, 1, 2),
                                             selectedPosition = currentSortType,
                                             onItemSelected = { _, _, value, changed ->
                                                 if (changed) {

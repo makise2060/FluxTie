@@ -20,6 +20,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.OfflineBolt
 import androidx.compose.material.icons.outlined.Update
@@ -244,6 +245,14 @@ fun SettingsPage(
                                     )
                                 }
                             }
+                        )
+                        CardDivider()
+                        SwitchSettingRow(
+                            icon = Icons.Outlined.DeleteOutline,
+                            title = stringResource(id = R.string.title_clear_cache_on_exit),
+                            summary = stringResource(id = R.string.tip_clear_cache_on_exit_summary),
+                            key = "clear_cache_on_exit",
+                            defaultValue = false,
                         )
                         CardDivider()
                         SettingRow(

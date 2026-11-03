@@ -319,8 +319,36 @@ object ImageUtil {
             return
         }
         CoroutineScope(Dispatchers.IO).launch {
-            val downloadResult = DownloadRequest(context, url).execute()
-            if (downloadResult is DownloadResult.Success) {
+            val success = saveToGallery(context, url)
+            if (success) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.toast_photo_saved,
+                            Environment.DIRECTORY_PICTURES + File.separator + FileUtil.FILE_FOLDER
+                        ),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    /**
+     * 下载单张图片并写入系统相册（API 29+）。
+     * @return 是否保存成功
+     */
+    private suspend fun saveToGallery(context: Context, url: String?): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || url == null) {
+            return false
+        }
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val downloadResult = DownloadRequest(context, url).execute()
+                if (downloadResult !is DownloadResult.Success) {
+                    return@withContext false
+                }
                 var mimeType = MimeType.JPEG.toString()
                 var fileName = URLUtil.guessFileName(url, null, mimeType)
                 downloadResult.data.data.newInputStream().use { inputStream ->
@@ -344,25 +372,46 @@ object ImageUtil {
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                             values
                         )
-                    }.getOrNull() ?: return@launch
+                    }.getOrNull() ?: return@withContext false
                     try {
                         cr.openFileDescriptor(uri, "w")?.use {
                             FileOutputStream(it.fileDescriptor).use { outputStream ->
                                 inputStream.copyTo(outputStream)
                             }
                         }
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.toast_photo_saved, relativePath),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        true
                     } catch (e: Exception) {
                         e.printStackTrace()
                         cr.delete(uri, null, null)
+                        false
                     }
                 }
+            }.getOrDefault(false)
+        }
+    }
+
+    /**
+     * 批量保存原图（issue #6）：去重后顺序下载，完成后一次性汇总提示，避免逐张 toast 轰炸。
+     * API 29 以下退化为逐张调用单图保存。
+     */
+    fun downloadAll(context: Context, urls: List<String?>) {
+        val distinctUrls = urls.filterNotNull().filter { it.isNotBlank() }.distinct()
+        if (distinctUrls.isEmpty()) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            distinctUrls.forEach { download(context, it) }
+            return
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            var success = 0
+            distinctUrls.forEach { url ->
+                if (saveToGallery(context, url)) success++
+            }
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.toast_save_all_result, success, distinctUrls.size),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }

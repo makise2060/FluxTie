@@ -63,6 +63,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import android.app.Activity
+import android.content.ComponentName
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.height
+import androidx.core.graphics.drawable.toBitmap
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.material.icons.rounded.Animation
+import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.SwapVert
+import androidx.compose.material.icons.rounded.ViewCompact
 import com.huanchengfly.tieba.post.App
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamicColorScheme
@@ -70,6 +83,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.activities.AppFontSizeActivity
 import com.huanchengfly.tieba.post.collectPreferenceAsState
 import com.huanchengfly.tieba.post.dataStore
+import com.huanchengfly.tieba.post.ui.widgets.compose.debounceClickable
 import com.huanchengfly.tieba.post.goToActivity
 import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.rememberPreferenceAsState
@@ -85,6 +99,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
+import com.huanchengfly.tieba.post.utils.AppIconUtil
+import com.huanchengfly.tieba.post.utils.LauncherIcons
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.formatColorHex
@@ -232,7 +248,17 @@ fun CustomSettingsPage(
                         label = stringResource(id = R.string.title_theme_mode_auto),
                         icon = Icons.Rounded.BrightnessAuto,
                         selected = followSystemNight,
-                        onClick = { followSystemNight = true },
+                        onClick = {
+                            followSystemNight = true
+                            // 选「自动」后立即按当前系统夜态对账，不等到下一次 onResume 才生效（issue #10）
+                            (context as? Activity)?.let { activity ->
+                                if (App.isSystemNight && !ThemeUtil.isNightMode()) {
+                                    ThemeUtil.switchToNightMode(activity, false)
+                                } else if (!App.isSystemNight && ThemeUtil.isNightMode()) {
+                                    ThemeUtil.switchFromNightMode(activity, false)
+                                }
+                            }
+                        },
                         modifier = Modifier.weight(1f),
                         preview = {
                             Row(Modifier.fillMaxSize()) {
@@ -359,6 +385,84 @@ fun CustomSettingsPage(
                 }
             }
 
+            // ── 应用图标（issue #12：新版/主题化/反色/旧版）
+            item {
+                SectionLabel(text = stringResource(id = R.string.settings_app_icon))
+            }
+            item {
+                AppearanceCard {
+                    var selectedIcon by remember {
+                        mutableStateOf(context.appPreferences.appIcon)
+                    }
+                    var useThemed by remember { mutableStateOf(context.appPreferences.useThemedIcon) }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        IconOptionCard(
+                            label = stringResource(id = R.string.title_app_icon_new),
+                            componentClass = LauncherIcons.NEW_ICON,
+                            selected = selectedIcon == LauncherIcons.NEW_ICON && !useThemed,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                selectedIcon = LauncherIcons.NEW_ICON
+                                useThemed = false
+                                context.appPreferences.appIcon = LauncherIcons.NEW_ICON
+                                context.appPreferences.useThemedIcon = false
+                                AppIconUtil.setIcon(LauncherIcons.NEW_ICON, isThemed = false)
+                            }
+                        )
+                        IconOptionCard(
+                            label = stringResource(id = R.string.title_app_icon_themed),
+                            componentClass = LauncherIcons.NEW_ICON_THEMED,
+                            selected = selectedIcon == LauncherIcons.NEW_ICON && useThemed,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                selectedIcon = LauncherIcons.NEW_ICON
+                                useThemed = true
+                                context.appPreferences.appIcon = LauncherIcons.NEW_ICON
+                                context.appPreferences.useThemedIcon = true
+                                AppIconUtil.setIcon(LauncherIcons.NEW_ICON, isThemed = true)
+                            }
+                        )
+                        IconOptionCard(
+                            label = stringResource(id = R.string.title_app_icon_invert),
+                            componentClass = LauncherIcons.NEW_ICON_INVERT,
+                            selected = selectedIcon == LauncherIcons.NEW_ICON_INVERT,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                selectedIcon = LauncherIcons.NEW_ICON_INVERT
+                                useThemed = false
+                                context.appPreferences.appIcon = LauncherIcons.NEW_ICON_INVERT
+                                context.appPreferences.useThemedIcon = false
+                                AppIconUtil.setIcon(LauncherIcons.NEW_ICON_INVERT, isThemed = false)
+                            }
+                        )
+                        IconOptionCard(
+                            label = stringResource(id = R.string.title_app_icon_classic),
+                            componentClass = LauncherIcons.OLD_ICON,
+                            selected = selectedIcon == LauncherIcons.OLD_ICON,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                selectedIcon = LauncherIcons.OLD_ICON
+                                useThemed = false
+                                context.appPreferences.appIcon = LauncherIcons.OLD_ICON
+                                context.appPreferences.useThemedIcon = false
+                                AppIconUtil.setIcon(LauncherIcons.OLD_ICON, isThemed = false)
+                            }
+                        )
+                    }
+                    Text(
+                        text = stringResource(id = R.string.tip_app_icon_summary),
+                        style = MaterialTheme.typography.caption,
+                        color = ExtendedTheme.colors.textSecondary,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                    )
+                }
+            }
+
             // ── 更多
             item {
                 SectionLabel(text = stringResource(id = R.string.title_theme_more))
@@ -408,6 +512,38 @@ fun CustomSettingsPage(
                         title = stringResource(id = R.string.title_lift_up_bottom_bar),
                         summary = stringResource(id = R.string.summary_lift_up_bottom_bar),
                         key = "liftUpBottomBar",
+                        defaultValue = true,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.SwapVert,
+                        title = stringResource(id = R.string.title_auto_hide_bottom_bar),
+                        summary = stringResource(id = R.string.tip_auto_hide_bottom_bar_summary),
+                        key = "auto_hide_bottom_bar",
+                        defaultValue = true,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.ViewCompact,
+                        title = stringResource(id = R.string.title_compact_feed_card),
+                        summary = stringResource(id = R.string.tip_compact_feed_card_summary),
+                        key = "compact_feed_card",
+                        defaultValue = false,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.Forum,
+                        title = stringResource(id = R.string.title_feed_card_show_forum_name),
+                        summary = stringResource(id = R.string.tip_feed_card_show_forum_name_summary),
+                        key = "feed_card_show_forum_name",
+                        defaultValue = false,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
+                        icon = Icons.Rounded.Animation,
+                        title = stringResource(id = R.string.title_splash_animation),
+                        summary = stringResource(id = R.string.tip_splash_animation_summary),
+                        key = "splash_animation_enabled",
                         defaultValue = true,
                     )
                 }
@@ -721,5 +857,56 @@ private fun VariantCard(
             modifier = Modifier.padding(horizontal = 8.dp)
         )
         Spacer(modifier = Modifier.size(8.dp))
+    }
+}
+
+/**
+ * 应用图标选项卡：经 PackageManager 解析对应 launcher alias 的实际图标做预览。
+ */
+@Composable
+private fun IconOptionCard(
+    label: String,
+    componentClass: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val iconBitmap = remember(componentClass) {
+        runCatching {
+            context.packageManager.getActivityIcon(ComponentName(context, componentClass))
+        }.getOrNull()?.toBitmap(96, 96)
+    }
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .border(
+                    width = if (selected) 2.dp else 0.5.dp,
+                    color = if (selected) MaterialTheme.colors.primary
+                    else ExtendedTheme.colors.divider.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .debounceClickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            if (iconBitmap != null) {
+                Image(
+                    bitmap = iconBitmap.asImageBitmap(),
+                    contentDescription = label,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.caption,
+            color = if (selected) MaterialTheme.colors.primary else ExtendedTheme.colors.textSecondary
+        )
     }
 }

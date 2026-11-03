@@ -45,6 +45,7 @@ fun getPhotoViewData(
                 postId = post.id,
                 width = width,
                 height = height,
+                floor = post.floor,
             )
         )
     )

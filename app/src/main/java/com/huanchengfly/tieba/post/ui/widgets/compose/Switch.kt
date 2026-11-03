@@ -1,14 +1,26 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.interaction.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -16,23 +28,24 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
-import kotlin.math.roundToInt
 
 /**
  * Material 3 规范的开关：52×32dp 实心轨道，选中态 24dp 圆点、未选中态 16dp 圆点 + 描边轨道。
  * 保持与旧版相同的公开 API（含拖动手势），所有调用点无需修改。
+ *
+ * 圆点位置与轨道色由 [checked] 经同一动画驱动（单一状态源），拖动时用本地覆盖层实时反馈，
+ * 快速连点不会再出现颜色与位置脱节的残留。
  */
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun Switch(
     checked: Boolean,
@@ -42,20 +55,46 @@ fun Switch(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     colors: SwitchColors = SwitchDefaults.colors(),
 ) {
-    val thumbStart = with(LocalDensity.current) { ThumbStartUnchecked.toPx() }
-    val thumbEnd = with(LocalDensity.current) { ThumbStartChecked.toPx() }
-    val swipeableState = rememberSwipeableStateFor(checked, onCheckedChange ?: {}, AnimationSpec)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    var dragFraction by remember { mutableStateOf<Float?>(null) }
+    val fraction by animateFloatAsState(
+        targetValue = if (checked) 1f else 0f,
+        animationSpec = tween(durationMillis = 150)
+    )
     val toggleableModifier =
         if (onCheckedChange != null) {
-            Modifier.toggleable(
-                value = checked,
-                onValueChange = onCheckedChange,
-                enabled = enabled,
-                role = Role.Switch,
-                interactionSource = interactionSource,
-                indication = null
-            )
+            Modifier
+                .toggleable(
+                    value = checked,
+                    onValueChange = onCheckedChange,
+                    enabled = enabled,
+                    role = Role.Switch,
+                    interactionSource = interactionSource,
+                    indication = null
+                )
+                .pointerInput(enabled, onCheckedChange, isRtl) {
+                    if (!enabled) return@pointerInput
+                    val travel = ThumbStartChecked.toPx() - ThumbStartUnchecked.toPx()
+                    var accumulated = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { accumulated = 0f },
+                        onDragEnd = {
+                            val f = dragFraction
+                            dragFraction = null
+                            if (f != null && (f > 0.5f) != checked) {
+                                onCheckedChange(f > 0.5f)
+                            }
+                        },
+                        onDragCancel = { dragFraction = null }
+                    ) { change, dragAmount ->
+                        change.consume()
+                        val signed = if (isRtl) -dragAmount else dragAmount
+                        accumulated += signed
+                        val base = if (checked) 1f else 0f
+                        val dir = if (checked) -1f else 1f
+                        dragFraction = (base + dir * accumulated / travel).coerceIn(0f, 1f)
+                    }
+                }
         } else {
             Modifier
         }
@@ -63,16 +102,6 @@ fun Switch(
     Box(
         modifier
             .then(toggleableModifier)
-            .swipeable(
-                state = swipeableState,
-                anchors = mapOf(thumbStart to false, thumbEnd to true),
-                thresholds = { _, _ -> FractionalThreshold(0.5f) },
-                orientation = Orientation.Horizontal,
-                enabled = enabled && onCheckedChange != null,
-                reverseDirection = isRtl,
-                interactionSource = interactionSource,
-                resistance = null
-            )
             .wrapContentSize(Alignment.Center)
             .requiredSize(SwitchTrackWidth, SwitchTrackHeight)
     ) {
@@ -80,9 +109,7 @@ fun Switch(
             checked = checked,
             enabled = enabled,
             colors = colors,
-            thumbOffset = swipeableState.offset,
-            thumbStart = thumbStart,
-            thumbEnd = thumbEnd,
+            fraction = dragFraction ?: fraction,
         )
     }
 }
@@ -92,9 +119,7 @@ private fun BoxScope.SwitchImpl(
     checked: Boolean,
     enabled: Boolean,
     colors: SwitchColors,
-    thumbOffset: State<Float>,
-    thumbStart: Float,
-    thumbEnd: Float,
+    fraction: Float,
 ) {
     val trackColor by colors.trackColor(enabled, checked)
     val thumbColor by colors.thumbColor(enabled, checked)
@@ -125,9 +150,9 @@ private fun BoxScope.SwitchImpl(
         }
 
         // 圆点：16dp ↔ 24dp，位置 8dp ↔ 24dp
-        val fraction = ((thumbOffset.value - thumbStart) / (thumbEnd - thumbStart)).coerceIn(0f, 1f)
-        val diameter = lerp(ThumbDiameterUnchecked, ThumbDiameterChecked, fraction).toPx()
-        val startX = lerp(ThumbStartUnchecked, ThumbStartChecked, fraction).toPx()
+        val progress = fraction.coerceIn(0f, 1f)
+        val diameter = lerp(ThumbDiameterUnchecked, ThumbDiameterChecked, progress).toPx()
+        val startX = lerp(ThumbStartUnchecked, ThumbStartChecked, progress).toPx()
         drawCircle(
             color = thumbColor,
             radius = diameter / 2,
@@ -143,8 +168,6 @@ internal val ThumbDiameterUnchecked = 16.dp
 internal val ThumbStartUnchecked = 8.dp
 internal val ThumbStartChecked = SwitchTrackWidth - ThumbDiameterChecked - 4.dp
 
-private val AnimationSpec = TweenSpec<Float>(durationMillis = 150)
-
 @Stable
 interface SwitchColors {
     @Composable
@@ -158,11 +181,11 @@ interface SwitchColors {
 }
 
 /**
- * Contains the default values used by [Switch]
+ * Contains the default values used to create a [SwitchColors]
  */
 object SwitchDefaults {
     /**
-     * Creates a [SwitchColors] that represents the different colors used in a [Switch] in
+     * Creates a [SwitchColors] that represents the different colors used by a [Switch] in
      * different states.
      */
     @Composable
@@ -201,7 +224,7 @@ object SwitchDefaults {
 /**
  * Default [SwitchColors] implementation.
  */
-@Immutable
+@Stable
 private class DefaultSwitchColors(
     private val checkedThumbColor: Color,
     private val checkedTrackColor: Color,

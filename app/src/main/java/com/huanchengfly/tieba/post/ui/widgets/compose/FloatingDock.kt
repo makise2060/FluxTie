@@ -81,11 +81,11 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.White
 import com.huanchengfly.tieba.post.ui.page.main.NavigationItem
+import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeColorEffect
-import dev.chrisbanes.haze.blur.blurEffect
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.blur.hazeBlur
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
@@ -174,6 +174,24 @@ fun supportsBackdropBlur(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_COD
 
 /** 底栏滚动自动隐藏的位移距离：胶囊高 + 底边距（调用方另加系统导航栏 inset）。 */
 internal val DockAutoHideTranslate = DockShellHeight + DockBottomMargin
+
+/**
+ * Dock 玻璃材质（haze 2.1 style 块，单一来源）：
+ * 模糊半径 + scrim 由这里定义，壳体与指示器共用；scrim 色即壳底色（surfaceTint）。
+ */
+@Composable
+private fun rememberDockGlassStyle(scrimColor: Color): HazeBlurStyle {
+    return remember(scrimColor) {
+        HazeBlurStyle {
+            blurRadius(DockBlurRadius)
+            noiseFactor(0f)
+            colorEffects(emptyList())
+            fallbackColorEffect(HazeColorEffect.tint(scrimColor))
+            blurEnabled(true)
+            blurredEdgeTreatment(androidx.compose.ui.draw.BlurredEdgeTreatment(CircleShape))
+        }
+    }
+}
 
 /**
  * 悬浮毛玻璃 Dock：64dp 全胶囊壳（背景模糊 + 高光 rim + 投影）+
@@ -343,19 +361,10 @@ fun FloatingDock(
                     .clip(shape)
                     .then(
                         if (blurSupported) {
-                            Modifier.hazeEffect(state = hazeState) {
-                                blurEffect {
-                                    style = HazeBlurStyle(
-                                        backgroundColor = Color.Transparent,
-                                        colorEffects = emptyList(),
-                                        blurRadius = DockBlurRadius,
-                                        noiseFactor = 0f,
-                                        fallbackColorEffect = HazeColorEffect.tint(surfaceTint),
-                                    )
-                                    blurEnabled = true
-                                    blurredEdgeTreatment = BlurredEdgeTreatment(shape)
-                                }
-                            }
+                            Modifier.hazeBlur(
+                                input = HazeInput.Sources(hazeState),
+                                style = rememberDockGlassStyle(surfaceTint),
+                            )
                         } else Modifier
                     )
                     .background(surfaceTint)
@@ -616,19 +625,10 @@ private fun DockIndicator(
             .then(
                 // 玻璃透镜：指示器自身采样背景模糊，按压放大越出壳体的部分也能透出模糊内容
                 if (blurSupported) {
-                    Modifier.hazeEffect(state = hazeState) {
-                        blurEffect {
-                            style = HazeBlurStyle(
-                                backgroundColor = Color.Transparent,
-                                colorEffects = emptyList(),
-                                blurRadius = DockBlurRadius,
-                                noiseFactor = 0f,
-                                fallbackColorEffect = HazeColorEffect.tint(Color.Transparent),
-                            )
-                            blurEnabled = true
-                            blurredEdgeTreatment = BlurredEdgeTreatment(shape)
-                        }
-                    }
+                    Modifier.hazeBlur(
+                        input = HazeInput.Sources(hazeState),
+                        style = rememberDockGlassStyle(Color.Transparent),
+                    )
                 } else Modifier
             )
             .drawBehind {

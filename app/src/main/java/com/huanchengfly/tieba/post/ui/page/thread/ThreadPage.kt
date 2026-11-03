@@ -153,6 +153,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Chip
 import com.huanchengfly.tieba.post.ui.widgets.compose.ConfirmDialog
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyIllustration
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyState
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.HorizontalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
@@ -1884,20 +1886,9 @@ fun ThreadPage(
                                 if (!isRefreshing && data.isEmpty()) {
                                     item(key = "EmptyTip") {
                                         Container {
-                                            TipScreen(
-                                                title = { Text(text = stringResource(id = R.string.title_empty)) },
-                                                image = {
-                                                    val composition by rememberLottieComposition(
-                                                        LottieCompositionSpec.RawRes(R.raw.lottie_empty_box)
-                                                    )
-                                                    LottieAnimation(
-                                                        composition = composition,
-                                                        iterations = LottieConstants.IterateForever,
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .aspectRatio(2f)
-                                                    )
-                                                },
+                                            EmptyState(
+                                                title = stringResource(id = R.string.title_empty),
+                                                illustration = EmptyIllustration.Box,
                                                 actions = {
                                                     if (canReload) {
                                                         Button(onClick = { reload() }) {

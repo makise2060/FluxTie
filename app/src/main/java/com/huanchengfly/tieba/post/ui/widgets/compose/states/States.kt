@@ -35,6 +35,8 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyIllustration
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyState
 import com.huanchengfly.tieba.post.ui.widgets.compose.TipScreen
 
 val DefaultLoadingScreen: @Composable StateScreenScope.() -> Unit = {
@@ -86,18 +88,10 @@ fun ThreeDotsLoading(
 }
 
 val DefaultEmptyScreen: @Composable StateScreenScope.() -> Unit = {
-    TipScreen(
-        title = { Text(text = stringResource(id = R.string.title_empty)) },
-        image = {
-            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_empty_box))
-            LottieAnimation(
-                composition = composition,
-                iterations = LottieConstants.IterateForever,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f)
-            )
-        },
+    EmptyState(
+        title = stringResource(id = R.string.title_empty),
+        illustration = EmptyIllustration.Box,
+        modifier = Modifier.fillMaxWidth(),
         actions = {
             if (canReload) {
                 Button(onClick = { reload() }) {
@@ -105,7 +99,6 @@ val DefaultEmptyScreen: @Composable StateScreenScope.() -> Unit = {
                 }
             }
         },
-        modifier = Modifier.fillMaxWidth(),
     )
 }
 

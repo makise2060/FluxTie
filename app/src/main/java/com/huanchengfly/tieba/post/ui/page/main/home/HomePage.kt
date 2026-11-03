@@ -84,6 +84,8 @@ import com.huanchengfly.tieba.post.ui.page.main.LocalMainBottomInsets
 import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.ActionItem
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyIllustration
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyState
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullRefreshLogoIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
 import com.huanchengfly.tieba.post.ui.widgets.compose.Button
@@ -685,34 +687,14 @@ fun EmptyScreen(
     onOpenExplore: () -> Unit
 ) {
     val navigator = LocalNavigator.current
-    TipScreen(
-        title = {
-            if (!loggedIn) {
-                Text(text = stringResource(id = R.string.title_empty_login))
-            } else {
-                Text(text = stringResource(id = R.string.title_empty))
-            }
-        },
-        image = {
-            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.lottie_astronaut))
-            LottieAnimation(
-                composition = composition,
-                iterations = LottieConstants.IterateForever,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f)
-            )
-        },
-        message = {
-            if (!loggedIn) {
-                Text(
-                    text = stringResource(id = R.string.home_empty_login),
-                    style = MaterialTheme.typography.body1,
-                    color = ExtendedTheme.colors.textSecondary,
-                    textAlign = TextAlign.Center
-                )
-            }
-        },
+    EmptyState(
+        title = stringResource(
+            id = if (!loggedIn) R.string.title_empty_login else R.string.title_empty
+        ),
+        subtitle = if (!loggedIn) {
+            stringResource(id = R.string.home_empty_login)
+        } else null,
+        illustration = EmptyIllustration.Astronaut,
         actions = {
             if (!loggedIn) {
                 Button(

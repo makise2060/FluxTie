@@ -54,6 +54,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.Button
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullRefreshLogoIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.Card
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyIllustration
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyState
 import com.huanchengfly.tieba.post.ui.widgets.compose.ErrorScreen
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCardPlaceholder
@@ -158,42 +160,15 @@ fun UserPostPage(
                 contentAlignment = Alignment.TopCenter
             ) {
                 if (hidePost) {
-                    TipScreen(
-                        title = { Text(text = stringResource(id = R.string.title_user_hide_post)) },
-                        image = {
-                            val composition by rememberLottieComposition(
-                                LottieCompositionSpec.RawRes(
-                                    R.raw.lottie_hide
-                                )
-                            )
-                            LottieAnimation(
-                                composition = composition,
-                                iterations = LottieConstants.IterateForever,
-                                modifier = Modifier
-                                    .padding(vertical = 16.dp)
-                                    .fillMaxWidth()
-                                    .aspectRatio(2.5f)
-                            )
-                        },
+                    EmptyState(
+                        title = stringResource(id = R.string.title_user_hide_post),
+                        illustration = EmptyIllustration.Hide,
                         scrollable = false,
                     )
                 } else {
-                    TipScreen(
-                        title = { Text(text = stringResource(id = R.string.title_empty)) },
-                        image = {
-                            val composition by rememberLottieComposition(
-                                LottieCompositionSpec.RawRes(
-                                    R.raw.lottie_empty_box
-                                )
-                            )
-                            LottieAnimation(
-                                composition = composition,
-                                iterations = LottieConstants.IterateForever,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(2f)
-                            )
-                        },
+                    EmptyState(
+                        title = stringResource(id = R.string.title_empty),
+                        illustration = EmptyIllustration.Box,
                         actions = {
                             if (canReload) {
                                 Button(onClick = { reload() }) {

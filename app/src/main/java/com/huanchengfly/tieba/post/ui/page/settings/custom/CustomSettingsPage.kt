@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
@@ -44,6 +45,7 @@ import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
 import androidx.compose.material.icons.rounded.Upcoming
 import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -125,10 +127,18 @@ private val DarkStyleOptions = listOf(
     DarkStyleOption(ThemeUtil.THEME_AMOLED_DARK, "amoled"),
 )
 
+/** 外观设置各分组 itemKey（顺序即列表顺序），供搜索锚点定位。 */
+private val customSettingsItemKeys = listOf(
+    "theme_mode_label", "theme_mode", "dark_style_label", "dark_style", "theme_color_label",
+    "theme_color", "palette_style_label", "palette_style", "app_icon_label", "app_icon",
+    "more_label", "more", "font_size_label", "font_size"
+)
+
 @Destination
 @Composable
 fun CustomSettingsPage(
     navigator: DestinationsNavigator,
+    anchor: String = "",
 ) {
     val context = LocalContext.current
     val darkStyleNames = mapOf(
@@ -230,17 +240,29 @@ fun CustomSettingsPage(
             )
         },
     ) { paddingValues ->
+        // 设置搜索锚点定位
+        val listState = rememberLazyListState()
+        LaunchedEffect(anchor) {
+            if (anchor.isNotBlank()) {
+                val index = customSettingsItemKeys.indexOf(anchor)
+                if (index >= 0) {
+                    kotlinx.coroutines.delay(150)
+                    listState.animateScrollToItem(index)
+                }
+            }
+        }
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             // ── 主题模式
-            item {
+            item(key = "theme_mode_label") {
                 SectionLabel(text = stringResource(id = R.string.title_theme_mode), icon = Icons.Rounded.BrightnessAuto)
             }
-            item {
+            item(key = "theme_mode") {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
@@ -296,10 +318,10 @@ fun CustomSettingsPage(
             }
 
             // ── 深色样式
-            item {
+            item(key = "dark_style_label") {
                 SectionLabel(text = stringResource(id = R.string.title_dark_style), icon = Icons.Rounded.DarkMode)
             }
-            item {
+            item(key = "dark_style") {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
@@ -324,10 +346,10 @@ fun CustomSettingsPage(
             }
 
             // ── 主题色彩（MD3 种子色点网格 + 跟随系统 + HCT 自定义取色器）
-            item {
+            item(key = "theme_color_label") {
                 SectionLabel(text = stringResource(id = R.string.title_theme_color), icon = Icons.Rounded.Palette)
             }
-            item {
+            item(key = "theme_color") {
                 ColorDotGrid(
                     currentSeedHex = seedColorPref,
                     dynamicSelected = dynamicSelected,
@@ -349,10 +371,10 @@ fun CustomSettingsPage(
             }
 
             // ── 配色风格（MD3 DynamicSchemeVariant，色卡即预览）
-            item {
+            item(key = "palette_style_label") {
                 SectionLabel(text = schemeStyleLabel)
             }
-            item {
+            item(key = "palette_style") {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
@@ -389,10 +411,10 @@ fun CustomSettingsPage(
             }
 
             // ── 应用图标（issue #12：新版/主题化/反色/旧版）
-            item {
+            item(key = "app_icon_label") {
                 SectionLabel(text = stringResource(id = R.string.settings_app_icon))
             }
-            item {
+            item(key = "app_icon") {
                 AppearanceCard {
                     var selectedIcon by remember {
                         mutableStateOf(context.appPreferences.appIcon)
@@ -467,10 +489,10 @@ fun CustomSettingsPage(
             }
 
             // ── 更多
-            item {
+            item(key = "more_label") {
                 SectionLabel(text = stringResource(id = R.string.title_theme_more))
             }
-            item {
+            item(key = "more") {
                 AppearanceCard {
                     SwitchSettingRow(
                         icon = Icons.Rounded.PhotoSizeSelectActual,
@@ -545,10 +567,10 @@ fun CustomSettingsPage(
             }
 
             // ── 字体
-            item {
+            item(key = "font_size_label") {
                 SectionLabel(text = stringResource(id = R.string.title_custom_font_size))
             }
-            item {
+            item(key = "font_size") {
                 AppearanceCard {
                     SettingRow(
                         icon = Icons.Rounded.FontDownload,

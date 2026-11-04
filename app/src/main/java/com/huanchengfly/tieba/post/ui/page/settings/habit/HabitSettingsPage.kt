@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
@@ -41,6 +42,7 @@ import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -74,10 +76,17 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 /** 使用习惯设置：卡片式分组（图片与媒体 / 浏览与导航 / 收藏 / 隐私与互动） */
 @OptIn(ExperimentalMaterialApi::class)
+/** 使用习惯各分组 itemKey（顺序即列表顺序），供搜索锚点定位。 */
+private val habitSettingsItemKeys = listOf(
+    "image_label", "image", "browse_label", "browse", "collect_label", "collect", "privacy_label", "privacy"
+)
+
 @Destination
 @Composable
 fun HabitSettingsPage(
     navigator: DestinationsNavigator
+,
+    anchor: String = "",
 ) {
     MyScaffold(
         backgroundColor = Color.Transparent,
@@ -96,20 +105,32 @@ fun HabitSettingsPage(
         },
     ) { paddingValues ->
         val context = LocalContext.current
+        // 设置搜索锚点定位
+        val listState = rememberLazyListState()
+        LaunchedEffect(anchor) {
+            if (anchor.isNotBlank()) {
+                val index = habitSettingsItemKeys.indexOf(anchor)
+                if (index >= 0) {
+                    kotlinx.coroutines.delay(150)
+                    listState.animateScrollToItem(index)
+                }
+            }
+        }
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             // ── 图片与媒体
-            item {
+            item(key = "image_label") {
                 SectionLabel(
                     text = stringResource(id = R.string.title_habit_group_image),
                     icon = Icons.Outlined.PhotoSizeSelectActual
                 )
             }
-            item {
+            item(key = "image") {
                 AppearanceCard {
                     ListSettingRow(
                         icon = Icons.Outlined.PhotoSizeSelectActual,
@@ -170,13 +191,13 @@ fun HabitSettingsPage(
             }
 
             // ── 浏览与导航
-            item {
+            item(key = "browse_label") {
                 SectionLabel(
                     text = stringResource(id = R.string.title_habit_group_browse),
                     icon = Icons.Outlined.Explore
                 )
             }
-            item {
+            item(key = "browse") {
                 AppearanceCard {
                     StartPageSelector()
                     CardDivider()
@@ -230,13 +251,13 @@ fun HabitSettingsPage(
             }
 
             // ── 收藏
-            item {
+            item(key = "collect_label") {
                 SectionLabel(
                     text = stringResource(id = R.string.title_habit_group_collect),
                     icon = Icons.Outlined.StarOutline
                 )
             }
-            item {
+            item(key = "collect") {
                 AppearanceCard {
                     SwitchSettingRow(
                         icon = Icons.Outlined.StarOutline,
@@ -259,13 +280,13 @@ fun HabitSettingsPage(
             }
 
             // ── 隐私与互动
-            item {
+            item(key = "privacy_label") {
                 SectionLabel(
                     text = stringResource(id = R.string.title_habit_group_privacy),
                     icon = Icons.Outlined.Verified
                 )
             }
-            item {
+            item(key = "privacy") {
                 AppearanceCard {
                     SwitchSettingRow(
                         icon = Icons.Outlined.AddModerator,

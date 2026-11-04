@@ -432,7 +432,7 @@ fun UserPage(
                     SettingRow(
                         icon = Icons.Rounded.Settings,
                         title = stringResource(id = R.string.my_info_settings),
-                        onClick = { navigator.navigate(SettingsPageDestination) }
+                        onClick = { navigator.navigate(SettingsPageDestination()) }
                     )
                     CardDivider()
                     SettingRow(

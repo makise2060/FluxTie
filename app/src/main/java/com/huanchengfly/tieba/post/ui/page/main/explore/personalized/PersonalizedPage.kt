@@ -166,7 +166,9 @@ fun PersonalizedPage(
     }
 
     if (showRefreshTip) {
-        LaunchedEffect(data) {
+        // 以 refreshCount 为 key：仅在每次刷新成功时回顶一次。
+        // 若以 data 为 key，提示窗内「加载更多」也会重启本 Effect，把浏览到半途的用户拽回顶部。
+        LaunchedEffect(refreshCount) {
             launch {
                 delay(20)
                 lazyListState.scrollToItem(0, 0)

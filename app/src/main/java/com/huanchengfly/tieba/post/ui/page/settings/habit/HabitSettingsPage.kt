@@ -213,6 +213,14 @@ fun HabitSettingsPage(
                     )
                     CardDivider()
                     SwitchSettingRow(
+                        icon = Icons.AutoMirrored.Rounded.Sort,
+                        title = stringResource(id = R.string.title_auto_hide_bottom_bar),
+                        summary = stringResource(id = R.string.tip_auto_hide_bottom_bar_summary),
+                        key = "auto_hide_bottom_bar",
+                        defaultValue = false,
+                    )
+                    CardDivider()
+                    SwitchSettingRow(
                         icon = Icons.Outlined.WatchLater,
                         title = stringResource(id = R.string.settings_home_page_show_history_forum),
                         key = "homePageShowHistoryForum",

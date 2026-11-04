@@ -164,9 +164,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
 
     // 悬浮底栏毛玻璃
-    implementation(libs.haze)
-    implementation(libs.haze.blur)
-    implementation(libs.haze.blur.materials)
+    implementation(libs.miuix.blur)
 
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)

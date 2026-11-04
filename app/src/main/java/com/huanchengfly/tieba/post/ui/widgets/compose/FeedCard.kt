@@ -470,7 +470,10 @@ fun FeedCardPlaceholder() {
             )
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 repeat(3) {
                     ActionBtnPlaceholder(
                         modifier = Modifier.weight(1f)
@@ -797,6 +800,7 @@ fun ThreadReplyBtn(
             Icon(
                 imageVector = ImageVector.vectorResource(id = R.drawable.ic_comment_new),
                 contentDescription = stringResource(id = R.string.desc_comment),
+                modifier = Modifier.size(18.dp),
             )
         },
         text = {
@@ -952,7 +956,7 @@ fun ThreadAgreeBtn(
                     onClick()
                 }
             )
-            .padding(vertical = 16.dp, horizontal = 4.dp)
+            .padding(vertical = 16.dp)
     ) {
         AgreeHeart(
             hasAgree = hasAgree,
@@ -1048,6 +1052,7 @@ fun ThreadShareBtn(
             Icon(
                 imageVector = Icons.Rounded.SwapCalls,
                 contentDescription = stringResource(id = R.string.desc_share),
+                modifier = Modifier.size(18.dp),
             )
         },
         text = {
@@ -1139,7 +1144,10 @@ fun FeedCard(
             }
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 ThreadShareBtn(
                     shareNum = item.get { shareNum }.toString(),
                     onClick = {},
@@ -1223,7 +1231,10 @@ fun FeedCard(
             }
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 ThreadShareBtn(
                     shareNum = item.get { threadInfo.shareNum }.toString(),
                     onClick = {},
@@ -1322,7 +1333,10 @@ fun FeedCard(
             }
         },
         action = {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 ThreadShareBtn(
                     shareNum = item.get { share_num }.toString(),
                     onClick = {},
@@ -1390,7 +1404,7 @@ private fun ActionBtn(
         horizontalArrangement = Arrangement.Center,
     ) {
         ProvideContentColor(color = color) {
-            Box(modifier = Modifier.size(18.dp)) {
+            Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
                 icon()
             }
             Spacer(modifier = Modifier.width(8.dp))

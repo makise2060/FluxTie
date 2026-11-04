@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.huanchengfly.tieba.post.ui.widgets.compose.DockAutoHideTranslate
+import com.huanchengfly.tieba.post.ui.widgets.compose.DockBottomMargin
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.huanchengfly.tieba.post.LocalDevicePosture
@@ -79,13 +80,12 @@ import com.huanchengfly.tieba.post.ui.utils.MainNavigationType
 import com.huanchengfly.tieba.post.ui.widgets.compose.FloatingDock
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.SplashState
-import com.huanchengfly.tieba.post.ui.widgets.compose.supportsBackdropBlur
 import com.huanchengfly.tieba.post.utils.appPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
@@ -201,7 +201,7 @@ fun MainPage(
             listOfNotNull(
                 NavigationItem(
                     id = "home",
-                    icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_inventory_2) },
+                    icon = { AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_home) },
                     title = { stringResource(id = R.string.title_main) },
                     content = {
                         HomePage(
@@ -311,9 +311,12 @@ fun MainPage(
         key = booleanPreferencesKey("floatingBottomNav"),
         defaultValue = LocalContext.current.appPreferences.floatingBottomNav
     )
-    // 毛玻璃底栏的模糊源:内容层录制为 haze 源,悬浮 Dock 从中采样(仅 API 31+ 启用)
-    val hazeState = remember { HazeState() }
-    val backdropBlurSupported = supportsBackdropBlur()
+    // 液态玻璃底栏的采样源:内容层经 layerBackdrop 录制,Dock 从中折射采样
+    val glassBackdropBaseColor = ExtendedTheme.colors.background
+    val glassBackdrop = rememberLayerBackdrop {
+        drawRect(glassBackdropBaseColor)
+        drawContent()
+    }
     val saveableStateHolder = rememberSaveableStateHolder()
     // 真悬浮布局:胶囊叠于内容之上,内容 edge-to-edge;经典贴底/Rail 模式沿用 Scaffold 避让
     val floatingLayout = navigationType == MainNavigationType.BOTTOM_NAVIGATION && floatingBottomNav
@@ -408,8 +411,8 @@ fun MainPage(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .then(
-                                    if (floatingLayout && backdropBlurSupported) {
-                                        Modifier.hazeSource(hazeState)
+                                    if (floatingLayout) {
+                                        Modifier.layerBackdrop(glassBackdrop)
                                     } else Modifier
                                 ),
                         ) { page ->
@@ -424,6 +427,7 @@ fun MainPage(
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.BottomCenter)
+                                    .padding(bottom = DockBottomMargin + navigationBarsInset)
                                     .offset {
                                         IntOffset(0, (dockHideTranslatePx * dockHideProgress).roundToInt())
                                     }
@@ -433,7 +437,7 @@ fun MainPage(
                                     onChangePosition = onChangePosition,
                                     onReselected = onReselected,
                                     navigationItems = navigationItems,
-                                    hazeState = hazeState,
+                                    backdrop = glassBackdrop,
                                     themeColors = themeColors,
                                 )
                             }

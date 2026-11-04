@@ -516,14 +516,6 @@ fun CustomSettingsPage(
                     )
                     CardDivider()
                     SwitchSettingRow(
-                        icon = Icons.Rounded.SwapVert,
-                        title = stringResource(id = R.string.title_auto_hide_bottom_bar),
-                        summary = stringResource(id = R.string.tip_auto_hide_bottom_bar_summary),
-                        key = "auto_hide_bottom_bar",
-                        defaultValue = true,
-                    )
-                    CardDivider()
-                    SwitchSettingRow(
                         icon = Icons.Rounded.ViewCompact,
                         title = stringResource(id = R.string.title_compact_feed_card),
                         summary = stringResource(id = R.string.tip_compact_feed_card_summary),

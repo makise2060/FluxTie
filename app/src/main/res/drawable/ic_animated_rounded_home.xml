@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:name="vector"
+            android:width="960dp"
+            android:height="960dp"
+            android:viewportWidth="960"
+            android:viewportHeight="960">
+            <!-- 屋体轮廓（带门洞） -->
+            <path
+                android:name="body"
+                android:fillColor="#000"
+                android:pathData="M 480 120 L 130 420 L 200 420 L 200 850 Q 200 870 220 870 L 400 870 L 400 610 L 560 610 L 560 870 L 740 870 Q 760 870 760 850 L 760 420 L 830 420 Z"
+                android:strokeWidth="1" />
+            <!-- 门：选中时填充 -->
+            <path
+                android:name="door"
+                android:fillColor="#00000000"
+                android:pathData="M 430 870 L 430 625 Q 430 610 445 610 L 515 610 Q 530 610 530 625 L 530 870 Z"
+                android:strokeWidth="1" />
+        </vector>
+    </aapt:attr>
+    <target android:name="door">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="200"
+                android:interpolator="@android:interpolator/fast_out_slow_in"
+                android:propertyName="fillColor"
+                android:valueFrom="#00000000"
+                android:valueTo="#FF000000"
+                android:valueType="colorType" />
+        </aapt:attr>
+    </target>
+</animated-vector>

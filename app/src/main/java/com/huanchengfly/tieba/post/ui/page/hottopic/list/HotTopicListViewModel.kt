@@ -56,9 +56,10 @@ sealed interface HotTopicListUiIntent : UiIntent {
 sealed interface HotTopicListPartialChange : PartialChange<HotTopicListUiState> {
     sealed class Load : HotTopicListPartialChange {
         override fun reduce(oldState: HotTopicListUiState): HotTopicListUiState = when (this) {
-            Start -> oldState.copy(isRefreshing = true)
-            is Success -> oldState.copy(isRefreshing = false, topicList = topicList)
-            is Failure -> oldState.copy(isRefreshing = false)
+            Start -> oldState.copy(isRefreshing = true, isError = false)
+            is Success -> oldState.copy(isRefreshing = false, topicList = topicList, isError = false)
+            // 已有内容时保留旧列表，仅无内容时进入失败态
+            is Failure -> oldState.copy(isRefreshing = false, isError = oldState.topicList.isEmpty())
         }
 
         object Start : Load()
@@ -75,5 +76,6 @@ sealed interface HotTopicListPartialChange : PartialChange<HotTopicListUiState> 
 
 data class HotTopicListUiState(
     val isRefreshing: Boolean = true,
-    val topicList: List<NewTopicList> = emptyList()
+    val topicList: List<NewTopicList> = emptyList(),
+    val isError: Boolean = false
 ) : UiState

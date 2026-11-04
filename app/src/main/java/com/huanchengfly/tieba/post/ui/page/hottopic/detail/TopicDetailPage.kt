@@ -2,6 +2,8 @@ package com.huanchengfly.tieba.post.ui.page.hottopic.detail
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -18,6 +20,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Icon
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
@@ -36,8 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -61,11 +66,14 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.loadMoreIndicator
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
-import com.huanchengfly.tieba.post.ui.widgets.compose.Avatar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Whatshot
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
 import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
+import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
+import com.huanchengfly.tieba.post.ui.widgets.compose.RankBadge
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -82,6 +90,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.rememberScrollState
@@ -146,7 +155,7 @@ fun TopicDetailPage(
     var headerHeight by rememberSaveable {
         mutableFloatStateOf(
             with(density) {
-                (Sizes.Large + 16.dp * 2).toPx()
+                300.dp.toPx()
             }
         )
     }
@@ -184,6 +193,7 @@ fun TopicDetailPage(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
                     TopicToolbar(
+                        topicInfo = topicInfo,
                         topicName = topicName,
                         showTitle = !isShowTopBarArea,
                         topicId = topicId
@@ -285,7 +295,7 @@ fun TopicDetailPage(
                                             },
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                                .padding(vertical = 8.dp)
                                         )
                                     }
                                 }
@@ -379,6 +389,7 @@ fun TopicDetailPage(
 
 @Composable
 private fun TopicToolbar(
+    topicInfo: TopicInfoBean?,
     topicName: String,
     showTitle: Boolean,
     topicId: Long? = null,
@@ -386,12 +397,25 @@ private fun TopicToolbar(
     val navigator = LocalNavigator.current
     Toolbar(
         title = {
-            if (showTitle) Text(
-                text = stringResource(
-                    id = R.string.title_topic,
-                    topicName
-                )
-            )
+            if (showTitle) {
+                // 折叠后的粘性条：话题名 + 名次（热度留给 Hero，避免顶栏拥挤）
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (topicInfo != null && topicInfo.idxNum > 0) {
+                        RankBadge(rank = topicInfo.idxNum)
+                    }
+                    Text(
+                        text = stringResource(
+                            id = R.string.title_topic,
+                            topicName
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         },
         navigationIcon = {
             BackNavigationIcon(onBackPressed = {
@@ -474,79 +498,120 @@ private fun TopicHeader(
     onForumClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = ExtendedTheme.colors
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = modifier
+            .padding(horizontal = 12.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(colors.card)
+            .border(
+                width = 0.5.dp,
+                color = colors.divider.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(20.dp)
+            )
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Hero：话题图 16:9 打底（无图降级为容器色渐变），底部渐变遮罩上叠名次/名称/热度
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
         ) {
-            Avatar(
-                data = topicInfo.topicImage,
-                size = Sizes.Large,
-                contentDescription = topicInfo.topicDesc,
-                shape = RoundedCornerShape(12.dp)
+            if (topicInfo.topicImage.isNotBlank()) {
+                NetworkImage(
+                    imageUri = topicInfo.topicImage,
+                    contentDescription = topicInfo.topicName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    colors.primaryContainer.takeIf { it != androidx.compose.ui.graphics.Color.Unspecified } ?: colors.chip,
+                                    colors.secondaryContainer.takeIf { it != androidx.compose.ui.graphics.Color.Unspecified } ?: colors.chip
+                                )
+                            )
+                        )
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f)),
+                            startY = 90f
+                        )
+                    )
             )
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                if (topicInfo.idxNum > 0) {
+                    RankBadge(rank = topicInfo.idxNum)
+                }
                 // 话题全称不截断：榜内话题名往往较长，截断后无法辨认具体话题
                 Text(
-                    text = stringResource(id = R.string.title_topic, topicInfo.topicName),
-                    style = MaterialTheme.typography.subtitle1,
+                    text = topicInfo.topicName,
+                    style = MaterialTheme.typography.h6,
                     fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    if (topicInfo.idxNum > 0) {
-                        // 排名做成实心徽章：一眼可见当前话题在榜内的位次
-                        Text(
-                            text = stringResource(id = R.string.topic_index, topicInfo.idxNum),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ExtendedTheme.colors.onAccent,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(100))
-                                .background(ExtendedTheme.colors.accent)
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.Whatshot,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(14.dp)
+                    )
                     Text(
                         text = stringResource(
                             id = R.string.hot_num,
                             topicInfo.discussNum.getShortNumString()
                         ),
                         style = MaterialTheme.typography.caption,
-                        color = ExtendedTheme.colors.textSecondary
+                        color = Color.White.copy(alpha = 0.85f)
                     )
                 }
             }
         }
-        // 话题介绍完整展示，不再交由列表页截断
-        if (topicInfo.topicDesc.isNotBlank()) {
-            Text(
-                text = topicInfo.topicDesc,
-                style = MaterialTheme.typography.body2,
-                color = ExtendedTheme.colors.textSecondary,
-            )
-        }
-        if (relateForums.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                relateForums.forEach { forum ->
-                    ForumInfoChip(
-                        imageUriProvider = { forum.avatar },
-                        nameProvider = { forum.forumName },
-                        onClick = { onForumClick(forum.forumName) }
-                    )
+        // 图下：完整简介 + 相关吧入口
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            if (topicInfo.topicDesc.isNotBlank()) {
+                Text(
+                    text = topicInfo.topicDesc,
+                    style = MaterialTheme.typography.body2,
+                    color = ExtendedTheme.colors.textSecondary,
+                )
+            }
+            if (relateForums.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    relateForums.forEach { forum ->
+                        ForumInfoChip(
+                            imageUriProvider = { forum.avatar },
+                            nameProvider = { forum.forumName },
+                            onClick = { onForumClick(forum.forumName) }
+                        )
+                    }
                 }
             }
         }

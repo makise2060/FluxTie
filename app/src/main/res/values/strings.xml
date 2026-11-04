@@ -425,6 +425,10 @@
     <string name="hot_thread_rank_rule">(按内容热度排序，每小时更新一次)</string>
     <string name="tab_all_hot_thread">总榜</string>
     <string name="hot_num">热度 %s</string>
+    <string name="title_topic_list_empty">话题榜暂无内容</string>
+    <string name="title_topic_list_failed">话题榜加载失败</string>
+    <string name="tip_load_failed_retry">出错了，请检查网络后重试</string>
+    <string name="tip_view_full_rank">查看完整榜单</string>
     <string name="settings_app_icon">应用图标</string>
     <string name="title_app_icon_new">新版</string>
     <string name="title_app_icon_themed">主题化</string>

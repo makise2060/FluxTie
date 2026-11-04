@@ -138,6 +138,18 @@ FluxTie 的开发与迭代离不开 [Linux.do](https://linux.do/) 社区。感�
 - [Lingyan000/fluxdo](https://github.com/Lingyan000/fluxdo)：外观与界面设计参考。
 - [aiotieba](https://github.com/Starry-OvO/aiotieba) 与 [tbclient.protobuf](https://github.com/n0099/tbclient.protobuf)：贴吧协议研究参考。
 
+## Star History
+
+<p align="center">
+  <a href="https://star-history.com/#makise2060/FluxTie&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=makise2060/FluxTie&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=makise2060/FluxTie&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=makise2060/FluxTie&type=Date" />
+    </picture>
+  </a>
+</p>
+
 ## License
 
 [GPL-3.0](LICENSE) © 原作者及 FluxTie 贡献者。

@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
+import com.huanchengfly.tieba.post.ui.common.anim.MotionTokens
 import com.huanchengfly.tieba.post.utils.appPreferences
 import androidx.core.graphics.drawable.toBitmap
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -179,19 +180,19 @@ fun AppSplashOverlay() {
     // 4. 整体退场过渡（开门交接）
     val transition = updateTransition(targetState = visible, label = "splashExit")
     val bgAlpha by transition.animateFloat(
-        transitionSpec = { tween(durationMillis = 300, easing = LinearEasing) },
+        transitionSpec = { tween(durationMillis = MotionTokens.DurationSlow, easing = LinearEasing) },
         label = "splashBgAlpha"
     ) { if (it) 1f else 0f }
     val exitAlpha by transition.animateFloat(
-        transitionSpec = { tween(durationMillis = 220, easing = EaseInCubic) },
+        transitionSpec = { tween(durationMillis = MotionTokens.DurationNormal, easing = MotionTokens.EasingExit) },
         label = "splashExitAlpha"
     ) { if (it) 1f else 0f }
     val exitScale by transition.animateFloat(
-        transitionSpec = { tween(durationMillis = 260, easing = FastOutSlowInEasing) },
+        transitionSpec = { tween(durationMillis = MotionTokens.DurationHandover, easing = MotionTokens.EasingStandard) },
         label = "splashExitScale"
     ) { if (it) 1f else 0.96f }
     val exitTranslateY by transition.animateDp(
-        transitionSpec = { tween(durationMillis = 260, easing = FastOutSlowInEasing) },
+        transitionSpec = { tween(durationMillis = MotionTokens.DurationHandover, easing = MotionTokens.EasingStandard) },
         label = "splashExitTranslateY"
     ) { if (it) 0.dp else (-18).dp }
 

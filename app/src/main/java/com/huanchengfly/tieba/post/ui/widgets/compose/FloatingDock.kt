@@ -1,762 +1,578 @@
 package com.huanchengfly.tieba.post.ui.widgets.compose
 
-import android.os.Build
-import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
-import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
-import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Badge
+import androidx.compose.material.BadgedBox
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
-import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.layout.layout
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastFirstOrNull
-import androidx.compose.ui.util.fastForEachIndexed
+import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.lerp
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedColors
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
-import com.huanchengfly.tieba.post.ui.common.theme.compose.White
 import com.huanchengfly.tieba.post.ui.page.main.NavigationItem
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.blur.HazeBlurStyle
-import dev.chrisbanes.haze.blur.HazeColorEffect
-import dev.chrisbanes.haze.blur.blurEffect
-import dev.chrisbanes.haze.hazeEffect
+import com.huanchengfly.tieba.post.ui.widgets.compose.dock.DampedDragAnimation
+import com.huanchengfly.tieba.post.ui.widgets.compose.dock.InteractiveHighlight
+import com.huanchengfly.tieba.post.ui.widgets.compose.dock.InnerShadow
+import com.huanchengfly.tieba.post.ui.widgets.compose.dock.innerShadow
+import com.huanchengfly.tieba.post.ui.widgets.compose.dock.lens
+import com.huanchengfly.tieba.post.ui.widgets.compose.dock.rememberCombinedBackdrop
+import com.huanchengfly.tieba.post.ui.widgets.compose.dock.vibrancy
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.blur
+import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
+import top.yukonga.miuix.kmp.blur.highlight.Highlight
+import top.yukonga.miuix.kmp.blur.highlight.LightPosition
+import top.yukonga.miuix.kmp.blur.highlight.LightSource
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sign
+import kotlin.math.sin
 
-/** 外壳高度：64dp 全胶囊。 */
-private val DockShellHeight = 64.dp
+internal val DockShellHeight = 64.dp
 
-/** 外壳水平外边距。 */
-private val DockHorizontalMargin = 16.dp
-
-/** 外壳距系统导航栏的底边距。 */
-private val DockBottomMargin = 12.dp
-
-/** 外壳内左右留白：首末槽位不贴胶囊边缘。 */
-private val DockInnerHorizontalPadding = 8.dp
-
-/** 静止指示器高度：壳高 64dp 上下各留 4dp（= 壳高 × 4/64）。 */
-private val DockIndicatorRestHeight = 56.dp
-
-/** 按下 bloom 目标高度 78dp（≈1.39×）。 */
-private const val DockIndicatorPressScale = 78f / 56f
-
-/** 按下时壳整体放大的宽度量（64dp 壳基准 16dp，按壳宽比例缩放）。 */
-private val DockPressBloomDp = 16.dp
-
-/** 按下时条目内容放大比例（1 + 0.2）。 */
-private const val DockTabPressScaleExtra = 0.2f
-
-/** 毛玻璃模糊半径：足够大才能把玻璃后的文字糊成色块，只留轮廓不留笔画（issue #7）。 */
-private val DockBlurRadius = 18.dp
-
-/** 壳底色透明度：有模糊时适度遮蔽（过透会把背景文字以近全清晰度透出、与图标叠字），无模糊时更高（替代纯色）。 */
-private const val DockSurfaceAlphaBlur = 0.68f
-private const val DockSurfaceAlphaFallback = 0.88f
-
-/**
- * 外圈微光晕分层（宽度 dp, alpha 系数）：多层同心描边、系数向外指数递减，
- * 合成自边界向外柔和淡出的渐变光晕（单层实线描边会形成硬边「套圈」观感）。
- * 每层绘制于胶囊外扩轮廓上，恰好只覆盖边界外侧 [0, width]，不含内侧残留。
- */
-private val DockHaloLayers = listOf(
-    0.75f to 0.30f, 1.5f to 0.22f, 2.25f to 0.16f, 3f to 0.117f,
-    3.75f to 0.085f, 4.5f to 0.062f, 5.25f to 0.045f, 6f to 0.033f,
-)
-
-/** 壳轮廓高光线宽度（顶部高光弧 / 底部反光弧）。 */
-private val DockRimWidth = 1.5.dp
-
-/** 壳轮廓内侧光带宽度（玻璃内散光，低 alpha 同渐变）。 */
-private val DockRimGlowWidth = 3.dp
-
-/** 指示器轮廓高光线宽度。 */
-private val DockIndicatorRimWidth = 1.dp
-
-/** 指示器轮廓内侧光带宽度。 */
-private val DockIndicatorRimGlowWidth = 2.dp
-
-/** 指示器外圈微光晕分层（壳同款技法，层数略少、跨度略窄）。 */
-private val DockIndicatorHaloLayers = listOf(
-    0.75f to 0.30f, 1.5f to 0.22f, 2.25f to 0.16f, 3f to 0.117f,
-    3.75f to 0.085f, 4.5f to 0.062f,
-)
-
-/**
- * 指示器视觉居中补偿：底部暗边叠在页面背景上、顶部高光叠在玻璃材质上，
- * 两侧对比度不完全对称，视觉重心略沉；几何上移少许抵消（实测视觉中心偏差 ≈1px）。
- */
-private val DockIndicatorVisualLift = 0.5.dp
-
-/**
- * 指示器速度形变：速度口径为「归一化槽位速度」（槽位/秒 ÷ (count-1)）。
- * 快速切换/拖拽时 scaleX 拉伸 / scaleY 压扁（约 ±20% 封顶），静止时无形变。
- */
-private const val DockVelocityDivisor = 10f
-private const val DockVelocityScaleXMultiplier = 0.75f
-private const val DockVelocityClamp = 0.2f
-
-/** 拖拽到边界后整个面板的 rubber-band 跟手位移上限。 */
-private val DockRubberBand = 4.dp
-
-/** 背景模糊（RenderEffect / haze）需要 API 31+。 */
-fun supportsBackdropBlur(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+internal val DockBottomMargin = 12.dp
 
 /** 底栏滚动自动隐藏的位移距离：胶囊高 + 底边距（调用方另加系统导航栏 inset）。 */
 internal val DockAutoHideTranslate = DockShellHeight + DockBottomMargin
 
+private val indicatorSpecular = Highlight(
+    width = 1.dp,
+    alpha = 1f,
+    style = BloomStroke(
+        color = Color.White.copy(alpha = 0.12f),
+        innerBlurRadius = 2.dp,
+        primaryLight = LightSource(
+            position = LightPosition(0.5f, -0.3f, -0.05f),
+            color = Color.White,
+            intensity = 1f,
+        ),
+        secondaryLight = LightSource(
+            position = LightPosition(0.5f, 0.8f, -0.5f),
+            color = Color.White,
+            intensity = 0.4f,
+        ),
+        dualPeak = true,
+    ),
+)
+
+private const val LIGHT_REF_X = 0.5f
+private const val LIGHT_REF_Y = 0.7f
+private const val GRAVITY_DIR_THRESHOLD_SQ = 0.01f
+private const val GRAVITY_ANGLE_STEP_RAD = (3.0 * PI / 180.0).toFloat()
+
+@Composable
+private fun rememberQuantizedGravityAngle(): State<Float> {
+    val tiltState = rememberDeviceTilt()
+    return remember(tiltState) {
+        derivedStateOf {
+            val tilt = tiltState.value
+            val gravityMagnitudeSquared = tilt.gravityX * tilt.gravityX + tilt.gravityY * tilt.gravityY
+            if (gravityMagnitudeSquared > GRAVITY_DIR_THRESHOLD_SQ) {
+                (atan2(tilt.gravityY, tilt.gravityX) / GRAVITY_ANGLE_STEP_RAD).roundToInt() *
+                        GRAVITY_ANGLE_STEP_RAD
+            } else {
+                (-PI / 2).toFloat()
+            }
+        }
+    }
+}
+
+@Composable
+private fun rememberGravityRotatedHighlight(base: Highlight, extraDegrees: Float = 0f): State<Highlight> {
+    val gravityAngle = rememberQuantizedGravityAngle()
+    return remember(gravityAngle, base, extraDegrees) {
+        derivedStateOf {
+            val baseStyle = base.style as BloomStroke
+            val radians = gravityAngle.value + (extraDegrees * PI / 180.0).toFloat()
+            base.copy(
+                style = baseStyle.copy(
+                    primaryLight = baseStyle.primaryLight.copy(
+                        position = LightPosition(
+                            x = LIGHT_REF_X + cos(radians),
+                            y = LIGHT_REF_Y + sin(radians),
+                            z = baseStyle.primaryLight.position.z,
+                        ),
+                    ),
+                ),
+            )
+        }
+    }
+}
+
 /**
- * 悬浮毛玻璃 Dock：64dp 全胶囊壳（背景模糊 + 高光 rim + 投影）+
- * 弹性胶囊指示器（spring 位移 + 按下 bloom + 速度形变 + 拖拽跟手）。
- *
- * 交互：
- * - 单击条目：切换 / 再次点击当前项触发刷新；
- * - 按住当前选中项不放：指示器跟随手指在槽位间滑动，滑到哪个条目哪个条目展开名称，
- *   松手落定并切换（面板整体带 4dp rubber-band 跟手位移）；
- * - 条目图标常显，仅指示器所在的条目展开名称。
- *
- * API < 31 自动降级为增强半透明纯色壳（不挂模糊）。
+ * 悬浮液态玻璃 Dock（IosLiquidGlassNavigationBar 全特性版）：
+ * 壳体 vibrancy + 4dp 模糊 + 24dp 边缘折射透镜 + 重力感高光；
+ * 选中指示器胶囊经「隐藏槽位捕获」把选中项内容透进透镜（含色散、
+ * 按压 bloom、速度形变、内阴影），支持按住拖拽与橡皮筋跟手。
  */
 @Composable
 fun FloatingDock(
     currentPosition: Int,
-    onChangePosition: (position: Int) -> Unit,
-    onReselected: (position: Int) -> Unit,
+    onChangePosition: (Int) -> Unit,
+    onReselected: (Int) -> Unit,
     navigationItems: ImmutableList<NavigationItem>,
-    hazeState: HazeState,
+    backdrop: Backdrop,
+    modifier: Modifier = Modifier,
     themeColors: ExtendedColors = ExtendedTheme.colors,
 ) {
-    val blurSupported = supportsBackdropBlur()
-    val itemCount = navigationItems.size
-    val maxIndex = (itemCount - 1).coerceAtLeast(0)
-    val scope = rememberCoroutineScope()
-    val hapticFeedback = LocalHapticFeedback.current
-    // pointerInput 的 block 只在 key 变化时重启，回调与选中值需经 rememberUpdatedState 取最新
-    val currentPositionLatest = rememberUpdatedState(currentPosition)
-    val onChangePositionLatest = rememberUpdatedState(onChangePosition)
-    val hapticFeedbackLatest = rememberUpdatedState(hapticFeedback)
-
-    // 指示器位置（浮点槽位索引）：拖拽中直接跟随手指，其余 spring 落定。
-    val dragPosition = remember { Animatable(currentPosition.toFloat()) }
-    var isDragging by remember { mutableStateOf(false) }
-    // 被按压的槽位（-1 = 无）：壳 bloom 由任意按压触发；
-    // 指示器 bloom 仅「按下当前选中项」触发；按下的条目图标单独放大。
-    var pressedIndex by remember { mutableIntStateOf(-1) }
-    val indicatorScaleX = remember { Animatable(1f) }
-    val indicatorScaleY = remember { Animatable(1f) }
-    val pressProgress = remember { Animatable(0f) }
-    // 速度形变（归一化槽位速度）
-    val velocity = remember { Animatable(0f) }
-    val velocityTracker = remember { VelocityTracker() }
-    // rubber-band 面板跟手位移（累计拖拽量，松手回弹）
-    val panelOffsetRaw = remember { Animatable(0f) }
-    var lastReselectTime by remember { mutableLongStateOf(0L) }
-
-    // 外部选中变化（点击切换 / 返回键回首页）→ 指示器 spring 落定
-    LaunchedEffect(currentPosition, maxIndex) {
-        if (!isDragging) {
-            dragPosition.animateTo(
-                targetValue = currentPosition.coerceIn(0, maxIndex).toFloat(),
-                animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
-            )
-        }
-    }
-    // 任意槽位按下 → 壳 bloom（按壳宽比例整体放大）
-    LaunchedEffect(pressedIndex >= 0) {
-        pressProgress.animateTo(
-            targetValue = if (pressedIndex >= 0) 1f else 0f,
-            animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
+    // 条目数变化时整体重建：DampedDragAnimation.modifier 的 pointerInput(Unit)
+    // 不随实例重启，否则手势沿用旧的 valueRange，指示器与宽度计算全部错位
+    key(navigationItems.size) {
+        FloatingDockImpl(
+            currentPosition = currentPosition.coerceIn(0, (navigationItems.size - 1).coerceAtLeast(0)),
+            onChangePosition = onChangePosition,
+            onReselected = onReselected,
+            navigationItems = navigationItems,
+            backdrop = backdrop,
+            modifier = modifier,
+            themeColors = themeColors,
+            isBlurEnabled = isRuntimeShaderSupported(),
         )
     }
-    // 仅按下当前选中项（含拖拽层按下）→ 指示器 56→78dp bloom
-    val indicatorPressed = pressedIndex == currentPosition
-    LaunchedEffect(indicatorPressed) {
-        val target = if (indicatorPressed) DockIndicatorPressScale else 1f
-        launch { indicatorScaleX.animateTo(target, spring(0.6f, 250f)) }
-        launch { indicatorScaleY.animateTo(target, spring(0.7f, 250f)) }
+}
+
+@Composable
+private fun FloatingDockImpl(
+    currentPosition: Int,
+    onChangePosition: (Int) -> Unit,
+    onReselected: (Int) -> Unit,
+    navigationItems: ImmutableList<NavigationItem>,
+    backdrop: Backdrop,
+    modifier: Modifier,
+    themeColors: ExtendedColors,
+    isBlurEnabled: Boolean,
+) {
+    val isDark = themeColors.isNightMode
+    val pillShape = remember { CircleShape }
+    val accentColor = MaterialTheme.colors.secondary
+    val tabContentColor = MaterialTheme.colors.onSurface
+    val surfaceContainer = themeColors.bottomBarSurface
+    val containerColor = if (isBlurEnabled) surfaceContainer.copy(alpha = 0.4f) else surfaceContainer
+    val tabsBackdrop = rememberLayerBackdrop()
+    val density = LocalDensity.current
+    val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
+    val animationScope = rememberCoroutineScope()
+    var tabWidthPx by remember { mutableFloatStateOf(0f) }
+    var totalWidthPx by remember { mutableFloatStateOf(0f) }
+    val offsetAnimation = remember { Animatable(0f) }
+    val rubberBandPx = with(density) { 4.dp.toPx() }
+    val panelOffset by remember(rubberBandPx) {
+        derivedStateOf {
+            if (totalWidthPx == 0f) 0f else {
+                val fraction = (offsetAnimation.value / totalWidthPx).fastCoerceIn(-1f, 1f)
+                rubberBandPx * fraction.sign * EaseOut.transform(abs(fraction))
+            }
+        }
+    }
+    var currentIndex by remember { mutableIntStateOf(currentPosition) }
+    val currentPositionUpdated by rememberUpdatedState(currentPosition)
+    val onChangePositionUpdated by rememberUpdatedState(onChangePosition)
+    val onReselectedUpdated by rememberUpdatedState(onReselected)
+    val navigationItemsUpdated by rememberUpdatedState(navigationItems)
+
+    fun select(index: Int) {
+        val items = navigationItemsUpdated
+        if (items.isEmpty()) return
+        val safeIndex = index.coerceIn(0, items.lastIndex)
+        if (safeIndex == currentPositionUpdated) {
+            onReselectedUpdated(safeIndex)
+        } else {
+            onChangePositionUpdated(safeIndex)
+        }
+        items[safeIndex].onClick?.invoke()
     }
 
-    // 未选中色：高对比主前景色（浅色近黑 / 夜间近白），避免浅色下过淡看不清
-    val unselectedColor = MaterialTheme.colors.onSurface
+    fun indexAt(positionX: Float): Int {
+        if (tabWidthPx == 0f) return currentIndex
+        val horizontalPaddingPx = with(density) { 4.dp.toPx() }
+        val logicalX = if (isLtr) positionX else totalWidthPx - positionX
+        return ((logicalX - horizontalPaddingPx) / tabWidthPx)
+            .toInt()
+            .coerceIn(0, navigationItems.size - 1)
+    }
 
-    Column(
-        modifier = Modifier
-            .navigationBarsPadding()
-            .padding(bottom = DockBottomMargin)
-    ) {
-        BoxWithConstraints(
+    val dampedDragAnimation = remember(animationScope, navigationItems.size, density, isLtr) {
+        DampedDragAnimation(
+            animationScope = animationScope,
+            initialValue = currentPosition.toFloat(),
+            valueRange = 0f..(navigationItems.size - 1).toFloat(),
+            visibilityThreshold = 0.001f,
+            initialScale = 1f,
+            pressedScale = 78f / 56f,
+            canDrag = { position -> position.x in 0f..totalWidthPx },
+            onDragStarted = { position ->
+                updateValue(indexAt(position.x).toFloat())
+            },
+            onDragStopped = {
+                val targetIndex = targetValue.roundToInt().coerceIn(0, navigationItems.lastIndex)
+                if (currentIndex != targetIndex) {
+                    currentIndex = targetIndex
+                    select(targetIndex)
+                }
+                updateValue(targetIndex.toFloat())
+                animationScope.launch { offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f)) }
+            },
+            onDragCancelled = {
+                updateValue(currentIndex.toFloat())
+                animationScope.launch { offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f)) }
+            },
+            onDrag = { _, dragAmount ->
+                if (tabWidthPx > 0f && dragAmount.x != 0f) {
+                    updateValue(
+                        (targetValue + dragAmount.x / tabWidthPx * if (isLtr) 1f else -1f)
+                            .fastCoerceIn(0f, (navigationItems.size - 1).toFloat()),
+                    )
+                    animationScope.launch { offsetAnimation.snapTo(offsetAnimation.value + dragAmount.x) }
+                }
+            },
+        )
+    }
+
+    LaunchedEffect(currentPosition) {
+        if (currentIndex != currentPosition) {
+            currentIndex = currentPosition
+            dampedDragAnimation.animateToValue(currentPosition.toFloat())
+        }
+    }
+
+    val interactiveHighlight = remember(animationScope, isLtr, dampedDragAnimation) {
+        InteractiveHighlight(
+            animationScope = animationScope,
+            position = { size, _ ->
+                Offset(
+                    x = if (isLtr) {
+                        (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset
+                    } else {
+                        size.width - (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset
+                    },
+                    y = size.height / 2f,
+                )
+            },
+        )
+    }
+    val baseHighlight = rememberGravityRotatedHighlight(indicatorSpecular, extraDegrees = -45f)
+    val pillHighlight = rememberGravityRotatedHighlight(indicatorSpecular, extraDegrees = 90f)
+    val combinedBackdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop)
+
+    // 槽位内容（可见层与隐藏捕获层共用）：图标 + 常显名称 + 角标
+    val tabContent: @Composable (Int, Boolean) -> Unit = { index, selected ->
+        val item = navigationItems[index]
+        val icon: @Composable () -> Unit = {
+            Icon(
+                painter = rememberAnimatedVectorPainter(item.icon(), selected),
+                contentDescription = item.title(selected),
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        if (item.badge) {
+            BadgedBox(badge = {
+                Badge(backgroundColor = themeColors.accent, contentColor = themeColors.background) {
+                    Text(
+                        text = item.badgeText.orEmpty(),
+                        style = MaterialTheme.typography.caption,
+                    )
+                }
+            }) { icon() }
+        } else {
+            icon()
+        }
+        Text(
+            text = item.title(selected),
+            fontSize = 11.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.Normal,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+
+    Box(modifier = modifier.width(IntrinsicSize.Min), contentAlignment = Alignment.CenterStart) {
+        // 壳体：玻璃材质 + 槽位内容
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = DockHorizontalMargin)
+                .selectableGroup()
+                .onSizeChanged { size ->
+                    totalWidthPx = size.width.toFloat()
+                    tabWidthPx = ((totalWidthPx - with(density) { 8.dp.toPx() }) / navigationItems.size).coerceAtLeast(0f)
+                }
+                .graphicsLayer { translationX = panelOffset }
+                .dropShadow(
+                    shape = pillShape,
+                    shadow = Shadow(
+                        radius = 10.dp,
+                        color = Color.Black,
+                        alpha = if (isDark) 0.2f else 0.1f,
+                    ),
+                )
+                .then(
+                    if (isBlurEnabled) {
+                        Modifier.drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { pillShape },
+                            effects = {
+                                padding = maxOf(padding, 40.dp.toPx())
+                                vibrancy()
+                                blur(4.dp.toPx(), 4.dp.toPx())
+                                lens(refractionHeight = 24.dp.toPx(), refractionAmount = 24.dp.toPx())
+                            },
+                            highlight = { baseHighlight.value.copy(alpha = 0.75f) },
+                            layerBlock = {
+                                val width = size.width.coerceAtLeast(1f)
+                                val scale = lerp(1f, 1f + 16.dp.toPx() / width, dampedDragAnimation.pressProgress)
+                                scaleX = scale
+                                scaleY = scale
+                            },
+                            onDrawSurface = { drawRect(containerColor) },
+                        )
+                    } else {
+                        Modifier.background(containerColor, pillShape)
+                    },
+                )
+                .then(
+                    if (isBlurEnabled) {
+                        interactiveHighlight.modifier.then(interactiveHighlight.gestureModifier)
+                    } else {
+                        Modifier
+                    },
+                )
+                .then(dampedDragAnimation.modifier)
                 .height(DockShellHeight)
+                .padding(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            val slotWidth = (maxWidth - DockInnerHorizontalPadding * 2) / itemCount
-            val density = LocalDensity.current
-            val slotWidthPx = with(density) { slotWidth.toPx() }
-            val innerPaddingPx = with(density) { DockInnerHorizontalPadding.toPx() }
-            val totalWidthPx = with(density) { maxWidth.toPx() }
-            val rubberBandPx = with(density) { DockRubberBand.toPx() }
-
-            // rubber-band 面板偏移：拖拽越远偏移越大（4dp 上限，EaseOut 缓动）
-            val panelOffsetPx: () -> Float = {
-                if (totalWidthPx <= 0f) {
-                    0f
-                } else {
-                    val fraction = (panelOffsetRaw.value / totalWidthPx).coerceIn(-1f, 1f)
-                    rubberBandPx * fraction.sign * EaseOut.transform(abs(fraction))
+            navigationItems.forEachIndexed { index, _ ->
+                val selected = index == currentPosition
+                Column(
+                    modifier = Modifier
+                        .semantics(mergeDescendants = true) {
+                            this.selected = selected
+                            role = Role.Tab
+                            onClick {
+                                select(index)
+                                true
+                            }
+                        }
+                        .focusable()
+                        .defaultMinSize(minWidth = if (navigationItems.size > 4) 56.dp else 76.dp)
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .graphicsLayer {
+                            val value = lerp(1f, 1.2f, dampedDragAnimation.pressProgress)
+                            scaleX = value
+                            scaleY = value
+                        },
+                    verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    CompositionLocalProvider(LocalContentColor provides if (selected) accentColor else tabContentColor) {
+                        tabContent(index, selected)
+                    }
                 }
             }
+        }
 
-            val shape = CircleShape
-            val isNight = themeColors.isNightMode
-            val surfaceTint = themeColors.bottomBarSurface.copy(
-                alpha = if (blurSupported) DockSurfaceAlphaBlur else DockSurfaceAlphaFallback
-            )
-            val shadowAlpha = if (isNight) 0.22f else 0.13f
-            // 双峰轮廓光：顶部高光弧（白）；底部次级弧——浅色下用暗边勾勒边界（白线在近白背景上不可见），
-            // 夜间/AMOLED 用次级白色反光
-            val rimTopAlpha = if (isNight) 0.22f else 0.90f
-            val rimBottomColor = if (isNight) Color.White else Color.Black
-            val rimBottomAlpha = if (isNight) 0.10f else 0.14f
-            // 外圈微光晕：浅色贴边暗晕勾勒边界，夜间贴边发光
-            val haloColor = if (isNight) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.06f)
-            // 4 色标双峰渐变（中段两端全透明，避免非预乘插值出脏灰）
-            val rimBrush = Brush.verticalGradient(
-                0f to Color.White.copy(alpha = rimTopAlpha),
-                0.35f to Color.White.copy(alpha = 0f),
-                0.65f to rimBottomColor.copy(alpha = 0f),
-                1f to rimBottomColor.copy(alpha = rimBottomAlpha),
-            )
-            val rimGlowBrush = Brush.verticalGradient(
-                0f to Color.White.copy(alpha = rimTopAlpha * 0.25f),
-                0.35f to Color.White.copy(alpha = 0f),
-                0.65f to rimBottomColor.copy(alpha = 0f),
-                1f to rimBottomColor.copy(alpha = rimBottomAlpha * 0.25f),
-            )
-
-            // 壳按压 bloom：按壳宽比例整体放大（含投影；draw phase 读取进度避免整树重组）
-            val pressBloomPx = with(density) { DockPressBloomDp.toPx() }
-
-            // 玻璃壳（均匀材质；裁切到胶囊。指示器 bloom 越界由指示器层负责，壳不参与）
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .graphicsLayer {
-                        val s = 1f + pressBloomPx / totalWidthPx.coerceAtLeast(1f) *
-                            pressProgress.value
-                        scaleX = s
-                        scaleY = s
-                        translationX = panelOffsetPx()
-                    }
-                    .shadow(
-                        elevation = 10.dp,
-                        shape = shape,
-                        clip = false,
-                        ambientColor = Color.Black.copy(alpha = shadowAlpha),
-                        spotColor = Color.Black.copy(alpha = shadowAlpha),
-                    )
-                    .drawBehind {
-                        // 外圈微光晕：多层同心描边向外递减合成柔和渐变光晕；
-                        // 每层绘制于外扩轮廓上，恰好只覆盖边界外侧（无内侧残留暗线）
-                        DockHaloLayers.forEach { (widthDp, factor) ->
-                            val wPx = widthDp.dp.toPx()
-                            val half = wPx / 2f
-                            drawRoundRect(
-                                color = haloColor.copy(alpha = haloColor.alpha * factor),
-                                topLeft = Offset(-half, -half),
-                                size = Size(size.width + wPx, size.height + wPx),
-                                cornerRadius = CornerRadius(size.height / 2f + half),
-                                style = Stroke(width = wPx),
-                            )
-                        }
-                    }
-                    .clip(shape)
-                    .then(
-                        if (blurSupported) {
-                            Modifier.hazeEffect(state = hazeState) {
-                                blurEffect {
-                                    style = HazeBlurStyle(
-                                        backgroundColor = Color.Transparent,
-                                        colorEffects = emptyList(),
-                                        blurRadius = DockBlurRadius,
-                                        noiseFactor = 0f,
-                                        fallbackColorEffect = HazeColorEffect.tint(surfaceTint),
-                                    )
-                                    blurEnabled = true
-                                    blurredEdgeTreatment = BlurredEdgeTreatment(shape)
-                                }
-                            }
-                        } else Modifier
-                    )
-                    .background(surfaceTint)
-                    .border(width = DockRimGlowWidth, brush = rimGlowBrush, shape = shape)
-                    .border(width = DockRimWidth, brush = rimBrush, shape = shape)
-            )
-
-            // 选中指示器（可越界 bloom，跟随拖拽；视觉居中，几何上移补偿描边不对称）
-            DockIndicator(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(y = -DockIndicatorVisualLift),
-                positionPx = innerPaddingPx + dragPosition.value * slotWidthPx,
-                widthPx = slotWidthPx,
-                pressedScaleX = indicatorScaleX.value,
-                pressedScaleY = indicatorScaleY.value,
-                velocity = velocity.value,
-                panelOffsetPx = panelOffsetPx,
-                isNightMode = themeColors.isNightMode,
-                hazeState = hazeState,
-                blurSupported = blurSupported,
-                surfaceTint = surfaceTint,
-            )
-
-            // 槽位内容：名称展开与配色由指示器位置驱动（拖拽经过时实时切换）
+        // 隐藏槽位捕获：不可见的选中项内容经 layerBackdrop 供给指示器透镜
+        if (isBlurEnabled) {
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = DockInnerHorizontalPadding)
-                    .graphicsLayer {
-                        translationX = panelOffsetPx()
-                    },
-            ) {
-                navigationItems.fastForEachIndexed { index, navigationItem ->
-                    val itemProgress =
-                        (1f - abs(index - dragPosition.value)).coerceIn(0f, 1f)
-                    DockItem(
-                        progress = itemProgress,
-                        pressed = pressedIndex == index,
-                        icon = navigationItem.icon(),
-                        title = navigationItem.title(index == currentPosition),
-                        badge = navigationItem.badge,
-                        badgeText = navigationItem.badgeText,
-                        selectedColor = MaterialTheme.colors.secondary,
-                        unselectedColor = unselectedColor,
-                        onPressedChange = { isPressed ->
-                            if (isPressed) {
-                                // 当前项的按压由拖拽手势层统一管理（拖出槽位不应提前结束按压反馈）
-                                if (index != currentPosition) {
-                                    pressedIndex = index
-                                }
-                            } else if (!isDragging && pressedIndex == index) {
-                                // 松手复位：不能依赖 currentPosition 判断（点击切换后它已变为新值，
-                                // 会把复位拦截导致按压态永久卡住）；拖拽中由手势层接管按压反馈
-                                pressedIndex = -1
-                            }
-                        },
-                        onClick = {
-                            if (index == currentPosition) {
-                                onReselected(index)
-                            } else {
-                                onChangePosition(index)
-                            }
-                            navigationItem.onClick?.invoke()
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-
-            // 拖拽手势层：覆盖当前指示器槽位（z 序最上）。
-            // 按住即进入拖拽（无 touch slop），指示器跟随手指滑动；
-            // 单击（未移动）触发当前项 reselect；拖拽手势消费移动事件后点击自动失效。
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .offset {
-                        IntOffset(
-                            (innerPaddingPx + dragPosition.value * slotWidthPx + panelOffsetPx())
-                                .roundToInt(),
-                            0
-                        )
-                    }
-                    .width(slotWidth)
-                    .height(DockIndicatorRestHeight)
-                    .pointerInput(itemCount, slotWidthPx, maxIndex) {
-                        if (itemCount <= 1) return@pointerInput
-                        awaitEachGesture {
-                            val down = awaitFirstDown(requireUnconsumed = false)
-                            // 拖拽起点即当前选中项：按下反馈（指示器 bloom + 起点图标放大）保持到松手
-                            pressedIndex = currentPositionLatest.value
-                            isDragging = true
-                            velocityTracker.resetTracking()
-                            var pointerId = down.id
-                            var moved = false
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                val change = event.changes.fastFirstOrNull { it.id == pointerId }
-                                if (change == null) {
-                                    // 手势被系统中断：复位按压/拖拽状态，不触发切换
-                                    pressedIndex = -1
-                                    isDragging = false
-                                    break
-                                }
-                                if (change.changedToUpIgnoreConsumed()) {
-                                    pressedIndex = -1
-                                    isDragging = false
-                                    val target =
-                                        dragPosition.value.roundToInt().coerceIn(0, maxIndex)
-                                    scope.launch {
-                                        dragPosition.animateTo(
-                                            target.toFloat(),
-                                            spring(dampingRatio = 1f, stiffness = 1000f)
-                                        )
-                                    }
-                                    scope.launch {
-                                        velocity.animateTo(
-                                            0f,
-                                            spring(dampingRatio = 0.5f, stiffness = 300f)
-                                        )
-                                    }
-                                    scope.launch {
-                                        panelOffsetRaw.animateTo(
-                                            0f,
-                                            spring(dampingRatio = 1f, stiffness = 300f)
-                                        )
-                                    }
-                                    if (moved && target != currentPositionLatest.value) {
-                                        hapticFeedbackLatest.value.performHapticFeedback(
-                                            HapticFeedbackType.TextHandleMove
-                                        )
-                                        onChangePositionLatest.value(target)
-                                    }
-                                    break
-                                }
-                                val delta = change.positionChange().x
-                                if (delta != 0f) {
-                                    moved = true
-                                    val next = (dragPosition.value + delta / slotWidthPx)
-                                        .coerceIn(0f, maxIndex.toFloat())
-                                    // AwaitPointerEventScope 受限，不能直接调 Animatable.snapTo；
-                                    // UNDISPATCHED 确保位置在本次事件处理内同步落地
-                                    scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                                        dragPosition.snapTo(next)
-                                    }
-                                    velocityTracker.addPosition(
-                                        SystemClock.uptimeMillis(),
-                                        Offset(next, 0f)
-                                    )
-                                    val slotVelocity = velocityTracker.calculateVelocity().x /
-                                        maxIndex.coerceAtLeast(1)
-                                    scope.launch {
-                                        velocity.animateTo(
-                                            slotVelocity,
-                                            spring(dampingRatio = 0.5f, stiffness = 300f)
-                                        )
-                                    }
-                                    scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                                        panelOffsetRaw.snapTo(panelOffsetRaw.value + delta)
-                                    }
-                                    change.consume()
-                                }
-                            }
-                        }
-                    }
-                    .clickable(
-                        interactionSource = null,
-                        indication = null,
-                        role = Role.Tab,
-                        onClick = {
-                            val currentTime = System.currentTimeMillis()
-                            if (currentTime - lastReselectTime >= 250) {
-                                hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.TextHandleMove
-                                )
-                                onReselected(currentPosition)
-                            }
-                            lastReselectTime = currentTime
-                        }
-                    )
                     .clearAndSetSemantics {}
-            )
-        }
-    }
-}
-
-@Composable
-private fun DockIndicator(
-    modifier: Modifier = Modifier,
-    positionPx: Float,
-    widthPx: Float,
-    pressedScaleX: Float,
-    pressedScaleY: Float,
-    velocity: Float,
-    panelOffsetPx: () -> Float,
-    isNightMode: Boolean,
-    hazeState: HazeState,
-    blurSupported: Boolean,
-    surfaceTint: Color,
-) {
-    val indicatorColor = if (isNightMode) Color.White else Color.Black
-    val shape = CircleShape
-    // 按压进度（0..1）：驱动填充淡出、顶部高光增强与光晕增强
-    val bloomProgress =
-        ((pressedScaleX - 1f) / (DockIndicatorPressScale - 1f)).coerceIn(0f, 1f)
-    // 三层轮廓光（对齐壳体：外圈微光晕 + 顶部高光弧 + 底部次级弧）。
-    // 浅色：顶部白高光在玻璃材质上可见；底部暗边勾勒边界（白线在近白页面不可见）；
-    // 夜间：双峰白色反光。按压时高光增强，边缘随按压「亮起」强化透镜感
-    val rimTopAlpha = ((if (isNightMode) 0.25f else 0.80f) + 0.10f * bloomProgress)
-        .coerceAtMost(1f)
-    val rimBottomColor = if (isNightMode) Color.White else Color.Black
-    val rimBottomAlpha = if (isNightMode) 0.10f else 0.12f
-    // 外圈微光晕：浅色贴边暗晕勾勒边界，夜间贴边发光（壳同款）
-    val haloColor = if (isNightMode) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.06f)
-    val rimBrush = Brush.verticalGradient(
-        0f to Color.White.copy(alpha = rimTopAlpha),
-        0.35f to Color.White.copy(alpha = 0f),
-        0.65f to rimBottomColor.copy(alpha = 0f),
-        1f to rimBottomColor.copy(alpha = rimBottomAlpha),
-    )
-    val rimGlowBrush = Brush.verticalGradient(
-        0f to Color.White.copy(alpha = rimTopAlpha * 0.2f),
-        0.35f to Color.White.copy(alpha = 0f),
-        0.65f to rimBottomColor.copy(alpha = 0f),
-        1f to rimBottomColor.copy(alpha = rimBottomAlpha * 0.2f),
-    )
-    Box(
-        modifier = modifier
-            .offset {
-                IntOffset((positionPx + panelOffsetPx()).roundToInt(), 0)
-            }
-            .width(with(LocalDensity.current) { widthPx.toDp() })
-            .height(DockIndicatorRestHeight)
-            .graphicsLayer {
-                val termX = (velocity / DockVelocityDivisor * DockVelocityScaleXMultiplier)
-                    .coerceIn(-DockVelocityClamp, DockVelocityClamp)
-                val termY = (velocity / DockVelocityDivisor * 0.25f)
-                    .coerceIn(-DockVelocityClamp, DockVelocityClamp)
-                scaleX = pressedScaleX / (1f - termX)
-                scaleY = pressedScaleY * (1f - termY)
-            }
-            .drawBehind {
-                // 外圈微光晕：多层同心描边向外递减（壳同款，避免单层实线「套圈」感）；
-                // 每层绘制于外扩轮廓上，恰好只覆盖边界外侧
-                DockIndicatorHaloLayers.forEach { (widthDp, factor) ->
-                    val wPx = widthDp.dp.toPx()
-                    val half = wPx / 2f
-                    drawRoundRect(
-                        color = haloColor.copy(alpha = haloColor.alpha * factor),
-                        topLeft = Offset(-half, -half),
-                        size = Size(size.width + wPx, size.height + wPx),
-                        cornerRadius = CornerRadius(size.height / 2f + half),
-                        style = Stroke(width = wPx),
+                    .alpha(0f)
+                    .layerBackdrop(tabsBackdrop)
+                    .graphicsLayer { translationX = panelOffset }
+                    .drawBackdrop(
+                        backdrop = backdrop,
+                        shape = { pillShape },
+                        effects = {
+                            vibrancy()
+                            blur(4.dp.toPx(), 4.dp.toPx())
+                            lens(refractionHeight = 24.dp.toPx(), refractionAmount = 24.dp.toPx())
+                        },
+                        onDrawSurface = { drawRect(containerColor) },
                     )
-                }
-            }
-            .clip(shape)
-            .then(
-                // 玻璃透镜：指示器自身采样背景模糊，按压放大越出壳体的部分也能透出模糊内容
-                if (blurSupported) {
-                    Modifier.hazeEffect(state = hazeState) {
-                        blurEffect {
-                            style = HazeBlurStyle(
-                                backgroundColor = Color.Transparent,
-                                colorEffects = emptyList(),
-                                blurRadius = DockBlurRadius,
-                                noiseFactor = 0f,
-                                fallbackColorEffect = HazeColorEffect.tint(Color.Transparent),
-                            )
-                            blurEnabled = true
-                            blurredEdgeTreatment = BlurredEdgeTreatment(shape)
+                    .then(interactiveHighlight.modifier)
+                    .height(56.dp)
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                navigationItems.forEachIndexed { index, _ ->
+                    Column(
+                        modifier = Modifier
+                            .defaultMinSize(minWidth = if (navigationItems.size > 4) 56.dp else 76.dp)
+                            .fillMaxHeight()
+                            .weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        CompositionLocalProvider(LocalContentColor provides accentColor) {
+                            tabContent(index, true)
                         }
                     }
-                } else Modifier
-            )
-            .drawBehind {
-                val cornerRadius = CornerRadius(size.height / 2f)
-                // 壳体同款底色打底：指示器=「模糊(内容)+壳底色+指示色」，等效于壳上叠一块玻璃透镜
-                // （无模糊降级时指示器为不透明纯色块）；按压放大越界部分呈现与壳一致的玻璃材质
-                drawRoundRect(color = surfaceTint, cornerRadius = cornerRadius)
-                // 选中指示色：静止时 10% 托底；按压时淡出至 3% 残量（玻璃透镜仍可辨，避免完全融入壳体）
-                val fillAlpha = if (blurSupported) {
-                    0.10f * (1f - 0.7f * bloomProgress)
-                } else 0.10f
-                drawRoundRect(
-                    color = indicatorColor.copy(alpha = fillAlpha),
-                    cornerRadius = cornerRadius,
-                )
-                drawRoundRect(
-                    brush = rimGlowBrush,
-                    cornerRadius = cornerRadius,
-                    style = Stroke(width = DockIndicatorRimGlowWidth.toPx()),
-                )
-                drawRoundRect(
-                    brush = rimBrush,
-                    cornerRadius = cornerRadius,
-                    style = Stroke(width = DockIndicatorRimWidth.toPx()),
-                )
-            }
-    )
-}
-
-@OptIn(ExperimentalAnimationGraphicsApi::class)
-@Composable
-private fun DockItem(
-    progress: Float,
-    pressed: Boolean,
-    icon: AnimatedImageVector,
-    title: String,
-    badge: Boolean,
-    badgeText: String?,
-    selectedColor: Color,
-    unselectedColor: Color,
-    onPressedChange: (Boolean) -> Unit,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val color = lerp(unselectedColor, selectedColor, progress)
-    val hapticFeedback = LocalHapticFeedback.current
-    var lastClickTime by remember { mutableLongStateOf(0L) }
-    val interactionSource = remember { MutableInteractionSource() }
-    val interactionPressed by interactionSource.collectIsPressedAsState()
-    LaunchedEffect(interactionPressed) { onPressedChange(interactionPressed) }
-
-    // 被按下的条目图标单独放大（spring，与其他条目互不影响）
-    val iconScale = remember { Animatable(1f) }
-    LaunchedEffect(pressed) {
-        iconScale.animateTo(
-            targetValue = if (pressed) 1f + DockTabPressScaleExtra else 1f,
-            animationSpec = spring(dampingRatio = 0.6f, stiffness = 250f),
-        )
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(24.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = {
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastClickTime >= 250) {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onClick()
-                    }
-                    lastClickTime = currentTime
                 }
-            )
-    ) {
-        Box {
-            Icon(
-                painter = rememberAnimatedVectorPainter(
-                    animatedImageVector = icon,
-                    atEnd = progress >= 0.5f
-                ),
-                contentDescription = title,
-                tint = color,
-                modifier = Modifier
-                    .size(24.dp)
-                    .graphicsLayer {
-                        scaleX = iconScale.value
-                        scaleY = iconScale.value
-                    },
-            )
-            if (badge) {
-                Text(
-                    textAlign = TextAlign.Center,
-                    fontSize = 10.sp,
-                    color = White,
-                    text = badgeText ?: "",
-                    modifier = Modifier
-                        .size(14.dp)
-                        .clip(CircleShape)
-                        .align(Alignment.TopEnd)
-                        .background(
-                            color = MaterialTheme.colors.secondary,
-                            shape = CircleShape
-                        ),
-                )
             }
         }
-        if (progress > 0f) {
-            Text(
-                text = title,
-                maxLines = 1,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = color,
-                modifier = Modifier
-                    .alpha((progress * progress * progress).coerceIn(0f, 1f))
-                    .layout { measurable, _ ->
-                        val placeable = measurable.measure(Constraints())
-                        layout((placeable.width * progress).roundToInt(), placeable.height) {
-                            placeable.placeRelative(0, 0)
+
+        // 选中指示器胶囊：透镜折射 + 色散 + 内阴影 + 速度形变
+        if (tabWidthPx > 0f) {
+            val tabWidth = with(density) { tabWidthPx.toDp() }
+            if (isBlurEnabled) {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .graphicsLayer {
+                            val progressOffset = dampedDragAnimation.value * tabWidthPx
+                            translationX = if (isLtr) progressOffset + panelOffset else -progressOffset + panelOffset
+                        }
+                        .drawBackdrop(
+                            backdrop = combinedBackdrop,
+                            shape = { pillShape },
+                            effects = {
+                                val progress = dampedDragAnimation.pressProgress
+                                lens(
+                                    refractionHeight = 10.dp.toPx() * progress,
+                                    refractionAmount = 14.dp.toPx() * progress,
+                                    depthEffect = true,
+                                    chromaticAberration = 0.5f,
+                                )
+                            },
+                            highlight = { pillHighlight.value.copy(alpha = dampedDragAnimation.pressProgress) },
+                            layerBlock = {
+                                scaleX = dampedDragAnimation.scaleX
+                                scaleY = dampedDragAnimation.scaleY
+                                val velocity = dampedDragAnimation.velocity / 10f
+                                scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
+                                scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
+                            },
+                            onDrawSurface = {
+                                val progress = dampedDragAnimation.pressProgress
+                                drawRect(
+                                    color = if (!isDark) Color.Black.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.1f),
+                                    alpha = 1f - progress,
+                                )
+                                drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                            },
+                        )
+                        .innerShadow(shape = pillShape) {
+                            InnerShadow(
+                                radius = 8.dp * dampedDragAnimation.pressProgress,
+                                color = Color.Black.copy(alpha = 0.15f),
+                                alpha = dampedDragAnimation.pressProgress,
+                            )
+                        }
+                        .height(56.dp)
+                        .width(tabWidth),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .graphicsLayer {
+                            val progressOffset = dampedDragAnimation.value * tabWidthPx
+                            translationX = if (isLtr) progressOffset + panelOffset else -progressOffset + panelOffset
+                        }
+                        .clip(pillShape)
+                        .background(accentColor.copy(alpha = 0.15f), pillShape)
+                        .height(56.dp)
+                        .width(tabWidth),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clearAndSetSemantics {}
+                            .wrapContentWidth(align = Alignment.Start, unbounded = true)
+                            .requiredWidth(with(density) { (totalWidthPx - 8.dp.toPx()).toDp() })
+                            .height(56.dp)
+                            .graphicsLayer {
+                                val progressOffset = dampedDragAnimation.value * tabWidthPx
+                                translationX = if (isLtr) -progressOffset else progressOffset
+                            },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        navigationItems.forEachIndexed { index, _ ->
+                            Column(
+                                modifier = Modifier
+                                    .defaultMinSize(minWidth = if (navigationItems.size > 4) 56.dp else 76.dp)
+                                    .fillMaxHeight()
+                                    .weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                CompositionLocalProvider(LocalContentColor provides accentColor) {
+                                    tabContent(index, true)
+                                }
+                            }
                         }
                     }
-                    .padding(start = 6.dp)
-            )
+                }
+            }
         }
     }
 }

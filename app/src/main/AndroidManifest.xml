@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+      miuix-blur 声明 minSdk 33（AGSL 运行时着色器），但内部以 isRuntimeShaderSupported()
+      门控全部着色器路径；低版本设备走纯色降级分支，故此处覆盖而非抬高本项目 minSdk。
+    -->
+    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur,top.yukonga.miuix.kmp.shader" />
+
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

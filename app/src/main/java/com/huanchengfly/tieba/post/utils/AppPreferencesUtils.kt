@@ -79,9 +79,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         key = "auto_check_update"
     )
 
-    // 滚动时自动隐藏悬浮底栏（上滑隐藏、下滑出现）
+    // 滚动时自动隐藏悬浮底栏（上滑隐藏、下滑出现）；默认常驻不收起
     var autoHideBottomBar by DataStoreDelegates.boolean(
-        defaultValue = true,
+        defaultValue = false,
         key = "auto_hide_bottom_bar"
     )
 

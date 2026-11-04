@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -65,10 +66,12 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import android.app.Activity
 import android.content.ComponentName
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.height
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.asImageBitmap
@@ -864,10 +867,23 @@ private fun IconOptionCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val iconBitmap = remember(componentClass) {
+    val density = LocalDensity.current
+    // 图标预览不依赖 alias 的启用状态：被 setComponentEnabledSetting 禁用的组件
+    // 无法经 getActivityIcon 解析，需带 MATCH_DISABLED_COMPONENTS 取 ActivityInfo 后从资源加载。
+    val iconSizePx = remember(density) { with(density) { 56.dp.roundToPx() } }
+    val iconBitmap = remember(componentClass, iconSizePx) {
         runCatching {
-            context.packageManager.getActivityIcon(ComponentName(context, componentClass))
-        }.getOrNull()?.toBitmap(96, 96)
+            val pm = context.packageManager
+            val info = pm.getActivityInfo(
+                ComponentName(context, componentClass),
+                PackageManager.MATCH_DISABLED_COMPONENTS or PackageManager.GET_META_DATA
+            )
+            val drawableId = info.icon.takeIf { it != 0 }
+                ?: info.applicationInfo.icon.takeIf { it != 0 }
+                ?: return@runCatching null
+            val res = pm.getResourcesForApplication(info.applicationInfo)
+            ResourcesCompat.getDrawable(res, drawableId, context.theme)
+        }.getOrNull()?.toBitmap(iconSizePx, iconSizePx)
     }
     Column(
         modifier = modifier,

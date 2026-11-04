@@ -79,6 +79,24 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         key = "auto_check_update"
     )
 
+    // 自动检查更新频率（天）：0=每次启动，1/3/7/14/30
+    var autoCheckIntervalDays by DataStoreDelegates.int(
+        defaultValue = 0,
+        key = "auto_check_interval_days"
+    )
+
+    // 上次自动检查更新的时间戳（毫秒），配合频率选项节流
+    var lastAutoCheckAt by DataStoreDelegates.long(
+        defaultValue = 0L,
+        key = "last_auto_check_at"
+    )
+
+    // 发现更新后静默在后台下载（完成后发「可以安装」通知，不弹窗打断）
+    var autoDownloadUpdate by DataStoreDelegates.boolean(
+        defaultValue = false,
+        key = "auto_download_update"
+    )
+
     // 滚动时自动隐藏悬浮底栏（上滑隐藏、下滑出现）；默认常驻不收起
     var autoHideBottomBar by DataStoreDelegates.boolean(
         defaultValue = false,

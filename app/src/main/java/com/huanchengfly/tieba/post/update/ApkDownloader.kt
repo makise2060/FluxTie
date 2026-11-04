@@ -30,6 +30,10 @@ class ApkDownloader @Inject constructor(
     private val updatesDir: File
         get() = File(context.getExternalFilesDir(null) ?: context.filesDir, "updates")
 
+    /** 已下载完成的同名安装包（存在且非空才返回），供更新链路复用、避免重复下载。 */
+    fun cachedApk(fileName: String): File? =
+        File(updatesDir, fileName).takeIf { it.isFile && it.length() > 0 }
+
     /**
      * @param onProgress (已读字节, 总字节；总字节 <= 0 表示未知)
      * @return 下载完成的文件
@@ -37,9 +41,9 @@ class ApkDownloader @Inject constructor(
     suspend fun download(url: String, fileName: String, onProgress: (Long, Long) -> Unit): File =
         withContext(Dispatchers.IO) {
             val dir = updatesDir.apply { mkdirs() }
-            // 下载前清理旧包与残留
+            // 下载前清理旧包与残留（保留本次目标文件，支持复用已下载的安装包）
             dir.listFiles()?.forEach { f ->
-                if (f.name.endsWith(".apk") || f.name.endsWith(".part")) {
+                if (f.name != fileName && (f.name.endsWith(".apk") || f.name.endsWith(".part"))) {
                     f.delete()
                 }
             }

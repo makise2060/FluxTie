@@ -11,6 +11,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,6 +35,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -56,6 +58,7 @@ import androidx.compose.material.icons.rounded.OndemandVideo
 import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.PhotoSizeSelectActual
+import androidx.compose.material.icons.rounded.UnfoldMore
 import androidx.compose.material.icons.rounded.SwapCalls
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -63,6 +66,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -90,6 +94,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
@@ -114,6 +119,7 @@ import com.huanchengfly.tieba.post.arch.ImmutableHolder
 import com.huanchengfly.tieba.post.arch.wrapImmutable
 import com.huanchengfly.tieba.post.findActivity
 import com.huanchengfly.tieba.post.goToActivity
+import com.huanchengfly.tieba.post.ui.common.anim.MotionTokens
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.windowsizeclass.WindowWidthSizeClass
 import com.huanchengfly.tieba.post.ui.page.photoview.PhotoViewActivity
@@ -665,50 +671,66 @@ private fun ThreadMedia(
                         }
                     )
                 } else {
-                    val showMediaCount = remember(medias) { min(medias.size, 3) }
-                    val hasMoreMedia = remember(medias) { medias.size > 3 }
-                    val showMedias = remember(medias) { medias.subList(0, showMediaCount) }
-                    Box {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth(mediaWidthFraction)
-                                .aspectRatio(mediaAspectRatio)
-                                .clip(RoundedCornerShape(8.dp)),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            showMedias.fastForEachIndexed { index, media ->
-                                val photoViewData = remember(
-                                    index, medias, forumId, forumName, threadId
-                                ) {
-                                    getPhotoViewData(
-                                        medias = medias.map { it.get() },
-                                        forumId = forumId,
-                                        forumName = forumName,
-                                        threadId = threadId,
-                                        index = index
+                    val isLongImage = isSinglePhoto && run {
+                        val m = medias.first().get()
+                        // 服务端长图标记，或宽高比 < 0.5 的细长单图
+                        m.isLongPic == 1 ||
+                                (m.width > 0 && m.height > 0 && m.width.toFloat() / m.height < 0.5f)
+                    }
+                    if (isLongImage) {
+                        LongImageBlock(
+                            media = medias.first(),
+                            forumId = forumId,
+                            forumName = forumName,
+                            threadId = threadId,
+                            widthFraction = mediaWidthFraction
+                        )
+                    } else {
+                        val showMediaCount = remember(medias) { min(medias.size, 3) }
+                        val hasMoreMedia = remember(medias) { medias.size > 3 }
+                        val showMedias = remember(medias) { medias.subList(0, showMediaCount) }
+                        Box {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(mediaWidthFraction)
+                                    .aspectRatio(mediaAspectRatio)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                showMedias.fastForEachIndexed { index, media ->
+                                    val photoViewData = remember(
+                                        index, medias, forumId, forumName, threadId
+                                    ) {
+                                        getPhotoViewData(
+                                            medias = medias.map { it.get() },
+                                            forumId = forumId,
+                                            forumName = forumName,
+                                            threadId = threadId,
+                                            index = index
+                                        )
+                                    }
+                                    NetworkImage(
+                                        imageUri = remember(media) { media.url },
+                                        contentDescription = stringResource(id = R.string.desc_photo),
+                                        modifier = Modifier
+                                            .focusable()
+                                            .fillMaxHeight()
+                                            .weight(1f),
+                                        photoViewData = photoViewData,
+                                        contentScale = ContentScale.Crop,
+                                        enablePreview = true
                                     )
                                 }
-                                NetworkImage(
-                                    imageUri = remember(media) { media.url },
-                                    contentDescription = stringResource(id = R.string.desc_photo),
+                            }
+                            if (hasMoreMedia) {
+                                Badge(
+                                    icon = Icons.Rounded.PhotoSizeSelectActual,
+                                    text = "${medias.size}",
                                     modifier = Modifier
-                                        .focusable()
-                                        .fillMaxHeight()
-                                        .weight(1f),
-                                    photoViewData = photoViewData,
-                                    contentScale = ContentScale.Crop,
-                                    enablePreview = true
+                                        .align(Alignment.BottomEnd)
+                                        .padding(8.dp)
                                 )
                             }
-                        }
-                        if (hasMoreMedia) {
-                            Badge(
-                                icon = Icons.Rounded.PhotoSizeSelectActual,
-                                text = "${medias.size}",
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(8.dp)
-                            )
                         }
                     }
                 }
@@ -730,6 +752,81 @@ private fun ThreadMedia(
         videoInfo = item.get { videoInfo }?.wrapImmutable(),
         modifier = modifier,
     )
+}
+
+/**
+ * 长图（单张、宽高比 < 0.5 或服务端 isLongPic 标记）：
+ * 收起态按真实比例但封顶 360dp（顶部预览），展开态按真实比例完整显示；点击「展开/收起」切换。
+ */
+@Composable
+private fun LongImageBlock(
+    media: ImmutableHolder<Media>,
+    forumId: Long,
+    forumName: String?,
+    threadId: Long,
+    widthFraction: Float,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val ratio = run {
+        val m = media.get()
+        if (m.width > 0 && m.height > 0) m.width.toFloat() / m.height else 0.4f
+    }.coerceIn(0.1f, 0.5f)
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth(widthFraction)) {
+        val collapsedHeight = min(maxWidth / ratio, 360.dp)
+        val targetHeight = if (expanded) maxWidth / ratio else collapsedHeight
+        val photoViewData = remember(media, forumId, forumName, threadId) {
+            getPhotoViewData(
+                medias = listOf(media.get()),
+                forumId = forumId,
+                forumName = forumName.orEmpty(),
+                threadId = threadId,
+                index = 0
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(targetHeight)
+                .animateContentSize(
+                    animationSpec = tween(durationMillis = MotionTokens.DurationNormal, easing = MotionTokens.EasingStandard)
+                )
+                .clip(RoundedCornerShape(8.dp))
+        ) {
+            NetworkImage(
+                imageUri = remember(media) { media.get().bigPic.ifBlank { media.get().srcPic } },
+                contentDescription = stringResource(id = R.string.desc_photo),
+                modifier = Modifier.fillMaxSize(),
+                photoViewData = photoViewData,
+                contentScale = if (expanded) ContentScale.FillWidth else ContentScale.Crop,
+                enablePreview = true
+            )
+            if (!expanded) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(100))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .debounceClickable(onClick = { expanded = true })
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.UnfoldMore,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = stringResource(id = R.string.button_expand_long_image),
+                        color = Color.White,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

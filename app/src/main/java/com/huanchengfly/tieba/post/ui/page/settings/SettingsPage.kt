@@ -20,6 +20,8 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.OfflineBolt
@@ -59,6 +61,7 @@ import com.huanchengfly.tieba.post.ui.page.destinations.MemeEmoticonPageDestinat
 import com.huanchengfly.tieba.post.ui.page.destinations.OKSignSettingsPageDestination
 import com.huanchengfly.tieba.post.ui.page.settings.components.AppearanceCard
 import com.huanchengfly.tieba.post.ui.page.settings.components.CardDivider
+import com.huanchengfly.tieba.post.ui.page.settings.components.ListSettingRow
 import com.huanchengfly.tieba.post.ui.page.settings.components.SectionLabel
 import com.huanchengfly.tieba.post.ui.page.settings.components.SettingRow
 import com.huanchengfly.tieba.post.ui.page.settings.components.SwitchSettingRow
@@ -280,6 +283,31 @@ fun SettingsPage(
                             key = "auto_check_update",
                             defaultValue = true,
                         )
+                        if (context.appPreferences.autoCheckUpdate) {
+                            CardDivider()
+                            ListSettingRow(
+                                icon = Icons.Outlined.Schedule,
+                                title = stringResource(id = R.string.title_auto_check_interval),
+                                entries = mapOf(
+                                    "0" to stringResource(id = R.string.interval_every_launch),
+                                    "1" to stringResource(id = R.string.interval_daily),
+                                    "3" to stringResource(id = R.string.interval_3_days),
+                                    "7" to stringResource(id = R.string.interval_weekly),
+                                    "14" to stringResource(id = R.string.interval_biweekly),
+                                    "30" to stringResource(id = R.string.interval_monthly),
+                                ),
+                                defaultValue = "0",
+                                key = "auto_check_interval_days",
+                            )
+                            CardDivider()
+                            SwitchSettingRow(
+                                icon = Icons.Outlined.CloudDownload,
+                                title = stringResource(id = R.string.title_auto_download_update),
+                                summary = stringResource(id = R.string.tip_auto_download_update),
+                                key = "auto_download_update",
+                                defaultValue = false,
+                            )
+                        }
                         if (context.appPreferences.showExperimentalFeatures) {
                             CardDivider()
                             SwitchSettingRow(

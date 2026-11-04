@@ -86,7 +86,7 @@ class UpdateManager @Inject constructor(
             }
             if (!context.appPreferences.autoCheckUpdate) return@launch
             // 频率节流：0=每次启动；其余按距上次检查的天数门槛
-            val intervalDays = context.appPreferences.autoCheckIntervalDays.toLong()
+            val intervalDays = context.appPreferences.autoCheckIntervalDays?.toLongOrNull() ?: 0L
             val lastCheckAt = context.appPreferences.lastAutoCheckAt
             if (intervalDays > 0 && lastCheckAt > 0 &&
                 System.currentTimeMillis() - lastCheckAt < intervalDays * 86_400_000L

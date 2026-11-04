@@ -137,7 +137,8 @@ fun DataStore<Preferences>.getInt(key: String, defaultValue: Int): Int {
 
     runBlocking {
         data.first {
-            resultValue = it[intPreferencesKey(key)] ?: resultValue
+            // 历史 key 类型被改写时（如 string 写入后改读 int）按默认值兜底，避免启动即崩
+            resultValue = runCatching { it[intPreferencesKey(key)] ?: resultValue }.getOrDefault(resultValue)
             true
         }
     }
@@ -192,7 +193,7 @@ fun DataStore<Preferences>.getBoolean(key: String, defaultValue: Boolean): Boole
 
     runBlocking {
         data.first {
-            resultValue = it[booleanPreferencesKey(key)] ?: resultValue
+            resultValue = runCatching { it[booleanPreferencesKey(key)] ?: resultValue }.getOrDefault(resultValue)
             true
         }
     }
@@ -218,7 +219,7 @@ fun DataStore<Preferences>.getLong(key: String, defaultValue: Long): Long {
 
     runBlocking {
         data.first {
-            resultValue = it[longPreferencesKey(key)] ?: resultValue
+            resultValue = runCatching { it[longPreferencesKey(key)] ?: resultValue }.getOrDefault(resultValue)
             true
         }
     }

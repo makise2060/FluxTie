@@ -79,9 +79,9 @@ open class AppPreferencesUtils private constructor(ctx: Context) {
         key = "auto_check_update"
     )
 
-    // 自动检查更新频率（天）：0=每次启动，1/3/7/14/30
-    var autoCheckIntervalDays by DataStoreDelegates.int(
-        defaultValue = 0,
+    // 自动检查更新频率（天，字符串存储与选择对话框一致）：0=每次启动，1/3/7/14/30
+    var autoCheckIntervalDays by DataStoreDelegates.string(
+        defaultValue = "0",
         key = "auto_check_interval_days"
     )
 

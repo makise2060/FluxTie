@@ -59,6 +59,8 @@ import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.TopicDetailPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyIllustration
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyState
 import com.huanchengfly.tieba.post.ui.widgets.compose.RankBadge
 import com.huanchengfly.tieba.post.ui.widgets.compose.ScrollableTabRow
 import com.huanchengfly.tieba.post.ui.widgets.compose.TopicHorizontalCard
@@ -120,7 +122,18 @@ fun HotPage(
         refreshing = isLoading,
         onRefresh = { viewModel.send(HotUiIntent.Load) })
     Box(modifier = Modifier.pullRefresh(pullRefreshState)) {
-        MyLazyColumn(
+        if (!isLoading && topicList.isEmpty() && threadList.isEmpty()) {
+            // 空榜单/失败兜底：无缓存可展示时给出统一空态，重试走下拉刷新链路
+            EmptyState(
+                title = stringResource(id = R.string.title_topic_list_failed),
+                subtitle = stringResource(id = R.string.tip_load_failed_retry),
+                illustration = EmptyIllustration.Box,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(LocalMainBottomInsets.current)
+            )
+        } else {
+            MyLazyColumn(
             verticalArrangement = Arrangement.spacedBy(feedCardListSpacing()),
             contentPadding = PaddingValues(top = 4.dp, bottom = LocalMainBottomInsets.current),
             modifier = Modifier
@@ -338,6 +351,8 @@ fun HotPage(
                     }
                 }
             }
+        }
+
         }
 
         PullRefreshLogoIndicator(

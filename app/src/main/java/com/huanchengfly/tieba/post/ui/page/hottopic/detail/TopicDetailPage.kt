@@ -72,7 +72,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.PullToRefreshLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.Toolbar
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.ramcosta.composedestinations.annotation.Destination
@@ -82,6 +81,15 @@ import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import com.huanchengfly.tieba.post.api.models.RelateForumBean
+import com.huanchengfly.tieba.post.ui.widgets.compose.ForumInfoChip
+import com.huanchengfly.tieba.post.ui.widgets.compose.feedCardListSpacing
 
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -270,10 +278,14 @@ fun TopicDetailPage(
                                 ) {
                                     topicInfo?.let {
                                         TopicHeader(
-                                            it,
+                                            topicInfo = it,
+                                            relateForums = relateForum,
+                                            onForumClick = { name ->
+                                                navigator.navigate(ForumPageDestination(name))
+                                            },
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(16.dp)
+                                                .padding(horizontal = 16.dp, vertical = 12.dp)
                                         )
                                     }
                                 }
@@ -304,16 +316,17 @@ fun TopicDetailPage(
                             ) {
                                 MyLazyColumn(
                                     state = lazyListState,
+                                    verticalArrangement = Arrangement.spacedBy(feedCardListSpacing()),
+                                    contentPadding = PaddingValues(vertical = 8.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     itemsIndexed(
                                         items = relateThread,
                                         key = { _, item -> "${item.feedId}" },
-                                    ) { index, item ->
+                                    ) { _, item ->
                                         Container {
-                                            Column {
-                                                FeedCard(
+                                            FeedCard(
                                                     item = wrapImmutable(item),
                                                     onClick = {
                                                         navigator.navigate(
@@ -352,13 +365,6 @@ fun TopicDetailPage(
                                                         )
                                                     },
                                                 )
-                                                if (index < relateThread.size - 1) {
-                                                    VerticalDivider(
-                                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                                        thickness = 2.dp
-                                                    )
-                                                }
-                                            }
                                         }
                                     }
                                 }
@@ -464,48 +470,85 @@ private fun TopicLoadMoreIndicator(
 @Composable
 private fun TopicHeader(
     topicInfo: TopicInfoBean,
+    relateForums: List<RelateForumBean>,
+    onForumClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Avatar(
                 data = topicInfo.topicImage,
                 size = Sizes.Large,
                 contentDescription = topicInfo.topicDesc,
-                shape = MaterialTheme.shapes.small
+                shape = RoundedCornerShape(12.dp)
             )
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                // 话题全称不截断：榜内话题名往往较长，截断后无法辨认具体话题
                 Text(
                     text = stringResource(id = R.string.title_topic, topicInfo.topicName),
-                    style = MaterialTheme.typography.body1,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.subtitle1,
+                    fontWeight = FontWeight.SemiBold,
                 )
-                Text(
-                    text = stringResource(id = R.string.topic_index, topicInfo.idxNum),
-                    style = MaterialTheme.typography.caption,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = stringResource(
-                        id = R.string.hot_num, topicInfo.discussNum.getShortNumString()
-                    ),
-                    style = MaterialTheme.typography.caption,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (topicInfo.idxNum > 0) {
+                        // 排名做成实心徽章：一眼可见当前话题在榜内的位次
+                        Text(
+                            text = stringResource(id = R.string.topic_index, topicInfo.idxNum),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ExtendedTheme.colors.onAccent,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(100))
+                                .background(ExtendedTheme.colors.accent)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                    Text(
+                        text = stringResource(
+                            id = R.string.hot_num,
+                            topicInfo.discussNum.getShortNumString()
+                        ),
+                        style = MaterialTheme.typography.caption,
+                        color = ExtendedTheme.colors.textSecondary
+                    )
+                }
             }
-
+        }
+        // 话题介绍完整展示，不再交由列表页截断
+        if (topicInfo.topicDesc.isNotBlank()) {
+            Text(
+                text = topicInfo.topicDesc,
+                style = MaterialTheme.typography.body2,
+                color = ExtendedTheme.colors.textSecondary,
+            )
+        }
+        if (relateForums.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                relateForums.forEach { forum ->
+                    ForumInfoChip(
+                        imageUriProvider = { forum.avatar },
+                        nameProvider = { forum.forumName },
+                        onClick = { onForumClick(forum.forumName) }
+                    )
+                }
+            }
         }
     }
 }

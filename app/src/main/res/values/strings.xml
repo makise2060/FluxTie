@@ -113,6 +113,7 @@
     <string name="button_sign_in">签到</string>
     <string name="toast_like_success">关注成功，你是第 %s 个关注本吧的</string>
     <string name="tab_forum_latest">最新</string>
+    <string name="tab_forum_hot">热门</string>
     <string name="tab_forum_good">精华</string>
     <string name="tip_good">精</string>
     <string name="button_no">否</string>

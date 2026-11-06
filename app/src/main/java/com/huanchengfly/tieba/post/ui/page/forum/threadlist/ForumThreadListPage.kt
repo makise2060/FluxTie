@@ -71,21 +71,27 @@ import kotlinx.collections.immutable.persistentListOf
 private fun getFirstLoadIntent(
     context: Context,
     forumName: String,
-    isGood: Boolean = false,
+    type: ForumThreadListType = ForumThreadListType.Latest,
 ): ForumThreadListUiIntent {
-    return if (isGood) ForumThreadListUiIntent.Refresh(forumName, -1, 0)
-    else ForumThreadListUiIntent.FirstLoad(forumName, getSortType(context, forumName), null)
+    return when (type) {
+        ForumThreadListType.Good -> ForumThreadListUiIntent.Refresh(forumName, -1, 0)
+        ForumThreadListType.Hot -> ForumThreadListUiIntent.FirstLoad(forumName, HOT_SORT_TYPE, null)
+        ForumThreadListType.Latest -> ForumThreadListUiIntent.FirstLoad(forumName, getSortType(context, forumName), null)
+    }
 }
 
 private fun getRefreshIntent(
     context: Context,
     forumName: String,
-    isGood: Boolean = false,
+    type: ForumThreadListType = ForumThreadListType.Latest,
     sortType: Int = getSortType(context, forumName),
-    goodClassifyId: Int? = if (isGood) 0 else null,
+    goodClassifyId: Int? = if (type == ForumThreadListType.Good) 0 else null,
 ): ForumThreadListUiIntent {
-    return if (isGood) ForumThreadListUiIntent.Refresh(forumName, -1, goodClassifyId)
-    else ForumThreadListUiIntent.Refresh(forumName, sortType, null)
+    return when (type) {
+        ForumThreadListType.Good -> ForumThreadListUiIntent.Refresh(forumName, -1, goodClassifyId)
+        ForumThreadListType.Hot -> ForumThreadListUiIntent.Refresh(forumName, HOT_SORT_TYPE, null)
+        ForumThreadListType.Latest -> ForumThreadListUiIntent.Refresh(forumName, sortType, null)
+    }
 }
 
 private fun getLoadMoreIntent(
@@ -94,16 +100,19 @@ private fun getLoadMoreIntent(
     forumName: String,
     page: Int,
     threadListIds: List<Long>,
-    isGood: Boolean = false,
+    type: ForumThreadListType = ForumThreadListType.Latest,
 ): ForumThreadListUiIntent {
-    return if (isGood) ForumThreadListUiIntent.LoadMore(forumId, forumName, page, threadListIds, 0)
-    else ForumThreadListUiIntent.LoadMore(
-        forumId,
-        forumName,
-        page,
-        threadListIds,
-        getSortType(context, forumName)
-    )
+    return when (type) {
+        ForumThreadListType.Good -> ForumThreadListUiIntent.LoadMore(forumId, forumName, page, threadListIds, 0)
+        ForumThreadListType.Hot -> ForumThreadListUiIntent.LoadMore(forumId, forumName, page, threadListIds, HOT_SORT_TYPE)
+        ForumThreadListType.Latest -> ForumThreadListUiIntent.LoadMore(
+            forumId,
+            forumName,
+            page,
+            threadListIds,
+            getSortType(context, forumName)
+        )
+    }
 }
 
 private enum class ItemType {
@@ -258,25 +267,30 @@ private fun ThreadList(
 fun ForumThreadListPage(
     forumId: Long,
     forumName: String,
-    isGood: Boolean = false,
-    viewModel: ForumThreadListViewModel = if (isGood) pageViewModel<GoodThreadListViewModel>() else pageViewModel<LatestThreadListViewModel>(),
+    type: ForumThreadListType,
+    viewModel: ForumThreadListViewModel = when (type) {
+        ForumThreadListType.Good -> pageViewModel<GoodThreadListViewModel>()
+        ForumThreadListType.Hot -> pageViewModel<HotThreadListViewModel>()
+        ForumThreadListType.Latest -> pageViewModel<LatestThreadListViewModel>()
+    },
     lazyListState: LazyListState = rememberLazyListState()
 ) {
+    val isGood = type == ForumThreadListType.Good
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val snackbarHostState = LocalSnackbarHostState.current
 
     LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(getFirstLoadIntent(context, forumName, isGood))
+        viewModel.send(getFirstLoadIntent(context, forumName, type))
         viewModel.initialized = true
     }
     onGlobalEvent<ForumThreadListUiEvent.Refresh>(
-        filter = { it.isGood == isGood },
+        filter = { it.type == type },
     ) {
-        viewModel.send(getRefreshIntent(context, forumName, isGood, it.sortType))
+        viewModel.send(getRefreshIntent(context, forumName, type, it.sortType))
     }
     onGlobalEvent<ForumThreadListUiEvent.BackToTop>(
-        filter = { it.isGood == isGood },
+        filter = { it.type == type },
     ) {
         lazyListState.animateScrollToItem(0)
     }
@@ -310,7 +324,9 @@ fun ForumThreadListPage(
     )
     val hasMore by viewModel.uiState.collectPartialAsState(
         prop1 = ForumThreadListUiState::hasMore,
-        initial = true
+        // 热门列表没有下一页，采集初值也必须是 false：produceState 在首个组合帧用的是这个字面量，
+        // 而 LoadMoreLayout 的 canLoadMore 只看它。给 true 就等于在首屏第一帧开了一次翻页窗口。
+        initial = type != ForumThreadListType.Hot
     )
     val currentPage by viewModel.uiState.collectPartialAsState(
         prop1 = ForumThreadListUiState::currentPage,
@@ -338,7 +354,7 @@ fun ForumThreadListPage(
     )
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
-        onRefresh = { viewModel.send(getRefreshIntent(context, forumName, isGood)) }
+        onRefresh = { viewModel.send(getRefreshIntent(context, forumName, type)) }
     )
     Box(
         modifier = Modifier.fillMaxSize()
@@ -355,7 +371,7 @@ fun ForumThreadListPage(
                             getRefreshIntent(
                                 context,
                                 forumName,
-                                true,
+                                type,
                                 goodClassifyId = it
                             )
                         )
@@ -373,7 +389,7 @@ fun ForumThreadListPage(
                             forumName,
                             currentPage,
                             threadListIds,
-                            isGood
+                            type
                         )
                     )
                 },

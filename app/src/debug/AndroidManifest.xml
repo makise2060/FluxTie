@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    debug 构建专用的清单覆盖层。
+
+    目的：让调试包能装到被国产 ROM「应用安装扫描」拦截的设备上做功能验收。
+    这些权限都不是「热门标签」功能需要的，全部来自上游 FluxTie 或其依赖库，
+    release 包的行为完全不受本文件影响（AAPT 只在本 source set 参与构建时合并它）。
+
+    每一项为什么可以安全去掉：
+
+    - REQUEST_INSTALL_PACKAGES：应用内更新用。UpdateManager.kt:227 有 canRequestPackageInstalls()
+      守卫，未声明时该调用返回 false，会走 onDenied -> openReleasesPage()，只是更新改成跳网页，不崩。
+    - ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION：只被 WebViewPage.kt:513-517 的网页定位用，
+      网页请求定位时走原有的「无权限」提示分支，不崩。
+    - READ_PHONE_STATE：主清单里本来就限了 maxSdkVersion=28，现代设备上早已不生效，去掉无影响。
+    - WRITE_SETTINGS：由依赖库合并进来，本项目代码未使用。
+    - com.google.android.gms.permission.AD_ID：广告 ID，本项目无自己的广告 SDK 依赖它。
+    - MSA 系列（com.asus.msa.SupplementaryDID.ACCESS / freemme.permission.msa）：
+      来自 OAID 设备标识库，缺失时该库退回无 OAID，不影响登录态与接口调用。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+        android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.READ_PHONE_STATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
+        tools:node="remove" />
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+    <uses-permission
+        android:name="com.asus.msa.SupplementaryDID.ACCESS"
+        tools:node="remove" />
+    <uses-permission
+        android:name="freemme.permission.msa"
+        tools:node="remove" />
+
+</manifest>

@@ -59,8 +59,29 @@ abstract class ForumThreadListViewModel :
         }
 }
 
+const val HOT_SORT_TYPE = 3
+
 enum class ForumThreadListType {
-    Latest, Good
+    Hot, Latest, Good
+}
+
+internal fun ForumThreadListType.resolveSortType(userSortType: Int): Int = when (this) {
+    ForumThreadListType.Hot -> HOT_SORT_TYPE
+    ForumThreadListType.Latest -> userSortType
+    ForumThreadListType.Good -> -1
+}
+
+/**
+ * 计算某一页列表的 `hasMore`。
+ *
+ * `Hot -> false` 是刻意为之，不是漏写，**不要“修正”成 [serverHasMore]**：
+ * 热门排序（`sort_type = 3`）在服务端只有约两页有效数据，`pn = 3` 与 `pn = 2` 返回的 30 条完全相同、
+ * 新增 id 为 0。若在这里透传服务端的 `has_more == 1`，热门页就会在第二、三页之间原地打转，
+ * 无限下拉出重复内容。产品上也已确定「热门只加载第一页 + 下拉刷新」。
+ */
+internal fun ForumThreadListType.resolveHasMore(serverHasMore: Boolean): Boolean = when (this) {
+    ForumThreadListType.Hot -> false
+    ForumThreadListType.Latest, ForumThreadListType.Good -> serverHasMore
 }
 
 @Stable
@@ -75,6 +96,26 @@ class LatestThreadListViewModel @Inject constructor() : ForumThreadListViewModel
 class GoodThreadListViewModel @Inject constructor() : ForumThreadListViewModel() {
     override fun createPartialChangeProducer(): PartialChangeProducer<ForumThreadListUiIntent, ForumThreadListPartialChange, ForumThreadListUiState> =
         ForumThreadListPartialChangeProducer(ForumThreadListType.Good)
+}
+
+@Stable
+@HiltViewModel
+class HotThreadListViewModel @Inject constructor() : ForumThreadListViewModel() {
+    /**
+     * 热门列表从**初始状态**起就必须是 `hasMore = false`，不能只靠 [resolveHasMore] 在响应到达时兜底。
+     *
+     * 基类默认 `hasMore = true`；而首屏加载走的是 `isRefreshing`，`isLoadingMore` 在整个首屏 RTT 内恒为 false。
+     * 于是 `LoadMoreLayout` 的 `canLoadMore = enableLoadMore && !loadEnd` 在首屏期间为 true，
+     * 用户此时上拉会真的发出 `LoadMore`，把 `pn = 2` 的数据拉进来 —— 那一页在服务端是真实有效的，
+     * 结果就是热门列表变长，违反「热门只加载第一页」的约束。
+     *
+     * 覆写初始状态直接把这个窗口关掉：状态一出生就到底，预加载与上拉两个触发点都被 `!loadEnd` 挡死。
+     */
+    override fun createInitialState(): ForumThreadListUiState =
+        ForumThreadListUiState(hasMore = false)
+
+    override fun createPartialChangeProducer(): PartialChangeProducer<ForumThreadListUiIntent, ForumThreadListPartialChange, ForumThreadListUiState> =
+        ForumThreadListPartialChangeProducer(ForumThreadListType.Hot)
 }
 
 private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType) :
@@ -97,7 +138,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             forumName,
             1,
             1,
-            sortType.takeIf { type == ForumThreadListType.Latest } ?: -1,
+            type.resolveSortType(sortType),
             goodClassifyId.takeIf { type == ForumThreadListType.Good }
         )
             .map<FrsPageResponse, ForumThreadListPartialChange.FirstLoad> { response ->
@@ -112,7 +153,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
                     response.data_.thread_id_list,
                     (response.data_.forum?.good_classify ?: emptyList()).wrapImmutable(),
                     goodClassifyId.takeIf { type == ForumThreadListType.Good },
-                    response.data_.page.has_more == 1
+                    type.resolveHasMore(response.data_.page.has_more == 1)
                 )
             }
             .onStart { emit(ForumThreadListPartialChange.FirstLoad.Start) }
@@ -123,7 +164,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
             forumName,
             1,
             1,
-            sortType.takeIf { type == ForumThreadListType.Latest } ?: -1,
+            type.resolveSortType(sortType),
             goodClassifyId.takeIf { type == ForumThreadListType.Good },
             forceNew = true
         )
@@ -136,7 +177,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
                     response.data_.thread_id_list,
                     (response.data_.forum?.good_classify ?: emptyList()).wrapImmutable(),
                     goodClassifyId.takeIf { type == ForumThreadListType.Good },
-                    response.data_.page.has_more == 1
+                    type.resolveHasMore(response.data_.page.has_more == 1)
                 )
             }
             .onStart { emit(ForumThreadListPartialChange.Refresh.Start) }
@@ -167,7 +208,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
                 forumName,
                 currentPage + 1,
                 2,
-                sortType.takeIf { type == ForumThreadListType.Latest } ?: -1,
+                type.resolveSortType(sortType),
                 goodClassifyId.takeIf { type == ForumThreadListType.Good }
             )
                 .map<FrsPageResponse, ForumThreadListPartialChange.LoadMore> { response ->
@@ -178,7 +219,7 @@ private class ForumThreadListPartialChangeProducer(val type: ForumThreadListType
                         threadList = threadList,
                         threadListIds = response.data_.thread_id_list,
                         currentPage = currentPage + 1,
-                        response.data_.page.has_more == 1
+                        type.resolveHasMore(response.data_.page.has_more == 1)
                     )
                 }
         }
@@ -421,12 +462,12 @@ sealed interface ForumThreadListUiEvent : UiEvent {
     ) : ForumThreadListUiEvent
 
     data class Refresh(
-        val isGood: Boolean,
+        val type: ForumThreadListType,
         val sortType: Int
     ) : ForumThreadListUiEvent
 
     data class BackToTop(
-        val isGood: Boolean
+        val type: ForumThreadListType
     ) : ForumThreadListUiEvent
 
     data class AddThread(

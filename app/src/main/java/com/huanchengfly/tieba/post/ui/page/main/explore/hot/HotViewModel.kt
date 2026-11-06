@@ -98,9 +98,12 @@ class HotViewModel @Inject constructor() :
                 for ((topicId, topicName) in topics) {
                     val image = runCatching {
                         TiebaApi.getInstance()
-                            .topicDetailFlow(topicId.toString(), topicName, 1, 1, 1, 1, 0, "")
+                            // 与话题详情页保持一致的分页参数：pageSize 给 1 时服务端可能不下发 topic_info
+                            .topicDetailFlow(topicId.toString(), topicName, 1, 1, 1, 10, 0, "")
                             .first()
                             .data.topicInfo.topicImage
+                    }.onFailure {
+                        android.util.Log.w("HotTopicImages", "topic $topicId 头图获取失败", it)
                     }.getOrNull()
                     if (!image.isNullOrBlank()) {
                         images[topicId.toString()] = image

@@ -55,6 +55,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.DockBottomMargin
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.huanchengfly.tieba.post.LocalDevicePosture
+import com.huanchengfly.tieba.post.LocalMainTabRequest
 import com.huanchengfly.tieba.post.LocalNotificationCountFlow
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.BaseComposeActivity.Companion.LocalWindowSizeClass
@@ -91,6 +92,9 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
+
+/** 底栏「消息」tab 的 id：外部入口（通知、快捷方式）按 id 定位，避免 hideExplore 造成的索引漂移。 */
+const val MAIN_TAB_ID_NOTIFICATION = "notification"
 
 @Composable
 private fun NavigationWrapper(
@@ -224,7 +228,7 @@ fun MainPage(
                     }
                 ),
                 NavigationItem(
-                    id = "notification",
+                    id = MAIN_TAB_ID_NOTIFICATION,
                     icon = {
                         AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_animated_rounded_notifications)
                     },
@@ -251,6 +255,21 @@ fun MainPage(
             ).toImmutableList()
         }
     }
+
+    // 通知/快捷方式入口：按 tab id 切换底栏（冷启动时请求已在 StateFlow 中等待首次组合消费）
+    val mainTabRequest = LocalMainTabRequest.current
+    LaunchedEffect(mainTabRequest) {
+        mainTabRequest.tabId.collect { tabId ->
+            if (tabId != null) {
+                val index = navigationItems.indexOfFirst { it.id == tabId }
+                if (index >= 0) {
+                    currentPosition = index
+                }
+                mainTabRequest.consume()
+            }
+        }
+    }
+
     // hideExplore 变化或进程恢复时 currentPosition 可能短暂越界（如保存了 3 但列表已缩到 3 项），
     // 复位 LaunchedEffect 要到组合之后才跑；所有读取统一走安全夹取，避免绘制期越界闪退（issue #8）
     val safeCurrentPosition = currentPosition.coerceIn(0, navigationItems.lastIndex)

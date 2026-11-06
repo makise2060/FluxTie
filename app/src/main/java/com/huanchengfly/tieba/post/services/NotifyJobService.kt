@@ -6,9 +6,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.job.JobParameters
 import android.app.job.JobService
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.ACTION_VIEW
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -18,6 +20,7 @@ import com.huanchengfly.tieba.post.api.TiebaApi
 import com.huanchengfly.tieba.post.api.models.MsgBean
 import com.huanchengfly.tieba.post.pendingIntentFlagImmutable
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
+import com.huanchengfly.tieba.post.utils.LauncherIcons
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -120,6 +123,29 @@ class NotifyJobService : JobService() {
         return true
     }
 
+    /**
+     * 把通知的 ACTION_VIEW 意图改成显式组件。
+     *
+     * 本包的 tblite scheme 同时被主 Activity 与各图标别名声明，隐式 intent 的落点由系统挑，
+     * 可能挑到与当前任务根不同的组件，任务无法复用 → 点通知看起来像「App 重启」。显式指向
+     * 当前启用的启动组件（用户桌面图标对应的那个）才能命中 singleTask 复用并走 onNewIntent。
+     */
+    private fun resolveLaunchIntent(intent: Intent): Intent {
+        val probe = Intent(ACTION_VIEW, Uri.parse("tblite://notifications/0"))
+        val candidates = packageManager.queryIntentActivities(probe, PackageManager.MATCH_DEFAULT_ONLY)
+            .map { it.activityInfo }
+            .filter { it.packageName == packageName }
+            .map { it.name }
+        // 图标切换后启用的是别名，优先它；否则回落到主 Activity
+        val target = candidates.firstOrNull {
+            it != LauncherIcons.NEW_ICON && LauncherIcons.ICONS.contains(it)
+        } ?: candidates.firstOrNull() ?: LauncherIcons.NEW_ICON
+        return Intent(intent).apply {
+            component = ComponentName(this@NotifyJobService, target)
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+    }
+
     private fun updateNotification(
         text: String,
         id: Int,
@@ -139,8 +165,8 @@ class NotifyJobService : JobService() {
                 PendingIntent.getActivity(
                     this,
                     0,
-                    intent,
-                    pendingIntentFlagImmutable()
+                    resolveLaunchIntent(intent),
+                    pendingIntentFlagImmutable() or PendingIntent.FLAG_UPDATE_CURRENT
                 )
             )
             .setColor(ThemeUtils.getColorByAttr(this, R.attr.colorPrimary))

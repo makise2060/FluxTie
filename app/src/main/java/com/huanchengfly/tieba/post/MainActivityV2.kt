@@ -95,7 +95,9 @@ import com.huanchengfly.tieba.post.rememberPreferenceAsState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.NavGraphs
 import com.huanchengfly.tieba.post.ui.page.destinations.ForumPageDestination
+import com.huanchengfly.tieba.post.ui.page.destinations.MainPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
+import com.huanchengfly.tieba.post.ui.page.main.MAIN_TAB_ID_NOTIFICATION
 import com.huanchengfly.tieba.post.ui.utils.DevicePosture
 import com.huanchengfly.tieba.post.ui.utils.isBookPosture
 import com.huanchengfly.tieba.post.ui.utils.isSeparating
@@ -142,8 +144,10 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import com.huanchengfly.tieba.post.dataStore
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
@@ -162,6 +166,29 @@ val LocalDevicePosture =
 val LocalNavController =
     staticCompositionLocalOf<NavHostController> { throw IllegalStateException("not allowed here!") }
 val LocalDestination = compositionLocalOf<DestinationSpec<*>?> { null }
+
+/**
+ * 外部入口（通知、快捷方式）请求主界面切到底栏某个 tab。
+ *
+ * 用 StateFlow 而不是 GlobalEvent：通知点击可能发生在冷启动（进程已被回收）时，
+ * 事件流没有重放，请求会丢；StateFlow 的当前值能在 MainPage 首次组合时补上。
+ * MainPage 消费后置空，避免配置变更/回栈时重复切 tab。
+ */
+class MainTabRequestState {
+    private val request = MutableStateFlow<String?>(null)
+    val tabId: StateFlow<String?> = request.asStateFlow()
+
+    fun request(tabId: String) {
+        request.value = tabId
+    }
+
+    fun consume() {
+        request.value = null
+    }
+}
+
+val LocalMainTabRequest =
+    staticCompositionLocalOf<MainTabRequestState> { throw IllegalStateException("not allowed here!") }
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -187,6 +214,9 @@ class MainActivityV2 : BaseComposeActivity() {
 
     private val notificationCountFlow: MutableSharedFlow<Int> =
         MutableSharedFlow(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** 通知/快捷方式点击待消费的底栏 tab 请求 */
+    private val mainTabRequest = MainTabRequestState()
 
     private val pickMediasLauncher =
         registerPickMediasLauncher {
@@ -255,8 +285,14 @@ class MainActivityV2 : BaseComposeActivity() {
     }
 
     private fun checkIntent(intent: Intent): Boolean {
-        return if (intent.data?.scheme == "com.baidu.tieba" && intent.data?.host == "unidispatch") {
-            val uri = intent.data!!
+        val data = intent.data
+        // 通知点击：tblite://notifications/{initialTab} → 切底栏「消息」tab（issue #32）
+        if (data?.scheme == "tblite" && data.host == "notifications") {
+            openNotificationsTab()
+            return true
+        }
+        return if (data?.scheme == "com.baidu.tieba" && data.host == "unidispatch") {
+            val uri = data
             when (uri.path.orEmpty().lowercase()) {
                 "/frs" -> {
                     val forumName = uri.getQueryParameter("kw") ?: return true
@@ -269,8 +305,8 @@ class MainActivityV2 : BaseComposeActivity() {
                 }
             }
             true
-        } else return if (intent.data?.host == "tieba.baidu.com") {
-            val uri = intent.data!!
+        } else return if (data?.host == "tieba.baidu.com") {
+            val uri = data
             val path = uri.path.orEmpty().lowercase()
             when {
                 path == "/f" -> {
@@ -295,6 +331,17 @@ class MainActivityV2 : BaseComposeActivity() {
         } else {
             false
         }
+    }
+
+    /**
+     * 切到「消息」tab。
+     *
+     * 冷启动时 NavController 尚未创建，请求先落在 [MainTabRequestState] 里等 MainPage 首次组合消费；
+     * 已运行时若当前停在帖子/设置等页面，先回主界面，否则 MainPage 不参与组合、收不到切 tab 请求。
+     */
+    private fun openNotificationsTab() {
+        mainTabRequest.request(MAIN_TAB_ID_NOTIFICATION)
+        myNavController?.popBackStack(MainPageDestination.route, inclusive = false)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -652,6 +699,7 @@ class MainActivityV2 : BaseComposeActivity() {
         CompositionLocalProvider(
             LocalNotificationCountFlow provides notificationCountFlow,
             LocalDevicePosture provides devicePostureFlow.collectAsState(),
+            LocalMainTabRequest provides mainTabRequest,
         ) {
             content()
         }

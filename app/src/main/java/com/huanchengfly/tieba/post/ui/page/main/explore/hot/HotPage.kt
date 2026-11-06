@@ -2,6 +2,7 @@ package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 
 import android.graphics.Typeface
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -173,30 +174,40 @@ fun HotPage(
                                     }
                                 )
                             }
-                            item(key = "TopicMore") {
-                                ProvideContentColor(color = ExtendedTheme.colors.primary) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .debounceClickable(onClick = {
-                                                navigator.navigate(HotTopicListPageDestination)
-                                            })
-                                            .padding(horizontal = 8.dp, vertical = 8.dp)
-                                    ) {
-                                        Text(
-                                            text = stringResource(id = R.string.tip_view_full_rank),
-                                            fontWeight = FontWeight.SemiBold,
-                                            maxLines = 1
-                                        )
-                                        Icon(
-                                            imageVector = Icons.Rounded.KeyboardArrowRight,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
+                        }
+                    }
+                }
+                item(key = "TopicMore") {
+                    Container(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .padding(top = 8.dp)
+                    ) {
+                        ProvideContentColor(color = ExtendedTheme.colors.primary) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(ExtendedTheme.colors.chip)
+                                    .debounceClickable(
+                                        indication = LocalIndication.current,
+                                        onClick = { navigator.navigate(HotTopicListPageDestination) }
+                                    )
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(id = R.string.tip_view_full_rank),
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    imageVector = Icons.Rounded.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
                     }

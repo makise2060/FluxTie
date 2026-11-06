@@ -107,6 +107,7 @@ fun TopicCard(
     intro: String,
     discussNum: Long,
     tag: Int,
+    imageUrl: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -164,6 +165,41 @@ fun TopicCard(
                 )
             }
             TopicHeatRow(discussNum = discussNum)
+        }
+        // 话题头图：64dp 尾图保留视觉辨识；无图降级为容器色渐变
+        TopicThumb(imageUrl = imageUrl)
+    }
+}
+
+/** 话题头图缩略块。 */
+@Composable
+private fun TopicThumb(imageUrl: String, modifier: Modifier = Modifier) {
+    val colors = ExtendedTheme.colors
+    Box(
+        modifier = modifier
+            .size(64.dp)
+            .clip(RoundedCornerShape(10.dp))
+    ) {
+        if (imageUrl.isNotBlank()) {
+            NetworkImage(
+                imageUri = imageUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                colors.primaryContainer takeUnlessSpecified colors.chip,
+                                colors.secondaryContainer takeUnlessSpecified colors.chip
+                            )
+                        )
+                    )
+            )
         }
     }
 }

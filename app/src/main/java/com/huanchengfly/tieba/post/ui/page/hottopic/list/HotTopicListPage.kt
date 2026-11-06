@@ -122,6 +122,7 @@ fun HotTopicListPage(
                             intro = item.topic_desc,
                             discussNum = item.discuss_num,
                             tag = item.topic_tag,
+                            imageUrl = item.topic_image,
                             onClick = {
                                 navigator.navigate(
                                     TopicDetailPageDestination(item.topic_id, item.topic_name)

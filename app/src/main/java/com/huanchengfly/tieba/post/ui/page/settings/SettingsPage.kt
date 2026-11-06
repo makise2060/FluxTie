@@ -7,12 +7,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Icon
@@ -38,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -117,7 +121,7 @@ fun SettingsPage(
         MyScaffold(
             backgroundColor = Color.Transparent,
             topBar = {
-                Toolbar(
+                TitleCentredToolbar(
                     title = {
                         Text(
                             text = stringResource(id = R.string.title_settings),
@@ -128,13 +132,22 @@ fun SettingsPage(
                         BackNavigationIcon(onBackPressed = { navigator.navigateUp() })
                     },
                     actions = {
-                        Icon(
-                            imageVector = Icons.Rounded.Search,
-                            contentDescription = stringResource(id = R.string.tip_settings_search_hint),
+                        Box(
                             modifier = Modifier
-                                .size(22.dp)
-                                .debounceClickable(onClick = { navigator.navigate(SettingsSearchPageDestination) })
-                        )
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .debounceClickable(
+                                    indication = LocalIndication.current,
+                                    onClick = { navigator.navigate(SettingsSearchPageDestination) }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Search,
+                                contentDescription = stringResource(id = R.string.tip_settings_search_hint),
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 )
             },

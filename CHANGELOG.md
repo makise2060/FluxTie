@@ -2,7 +2,7 @@
 
 版本标题格式：`## [X.Y.Z] - YYYY-MM-DD · 主题`，主题为 2–6 个汉字，概括本版重点；未定义主题时标题退化为 `vX.Y.Z`。更早版本的更新内容见 [Releases](https://github.com/makise2060/FluxTie/releases)。
 
-## 未发布
+## [1.2.1] - 2026-11-07 · 拾遗
 
 ### 新增
 

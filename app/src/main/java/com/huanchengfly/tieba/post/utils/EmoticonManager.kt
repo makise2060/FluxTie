@@ -193,39 +193,68 @@ object EmoticonManager {
     }
 
     /**
-     * 为文本中出现的个人表情（`MemeEmoticon#key` 注解）构建 InlineContent。
+     * 为文本中出现的个人表情（`MemeEmoticon#{key}|{w}|{h}` 注解）构建 InlineContent。
      * 仅构建文本中实际出现且本地有 URL 的表情，避免全量构建。
+     *
+     * @param stickerSize true 时按贴纸口径展示：按 sharpText 携带的原始宽高比适配进
+     * [EmoticonUtil.MEME_STICKER_SIZE_DP] 方框（宽高缺失按 1:1）；false 时退回单行行高（信息流摘要等紧凑场景）
      */
     fun buildMemeInlineContent(
         text: AnnotatedString,
-        sizePx: Float
+        sizePx: Float,
+        stickerSize: Boolean = true,
     ): Map<String, InlineTextContent> {
-        val keys = text.getStringAnnotations(EmoticonUtil.INLINE_CONTENT_TAG, 0, text.length)
+        val entries = text.getStringAnnotations(EmoticonUtil.INLINE_CONTENT_TAG, 0, text.length)
             .mapNotNull { annotation ->
                 annotation.item
                     .takeIf { it.startsWith(EmoticonUtil.MEME_INLINE_PREFIX) }
                     ?.removePrefix(EmoticonUtil.MEME_INLINE_PREFIX)
+                    ?.split('|')
+                    ?.takeIf { it.size == 3 }
+                    ?.let { (key, w, h) ->
+                        Triple(key, w.toIntOrNull() ?: 0, h.toIntOrNull() ?: 0)
+                    }
             }
-            .distinct()
-            .filter { memeEmoticonMap.containsKey(it) }
-        if (keys.isEmpty()) return emptyMap()
-        return keys.associate { key ->
-            "${EmoticonUtil.MEME_INLINE_PREFIX}$key" to InlineTextContent(
+            .distinctBy { it.first }
+            .filter { (key, _, _) -> memeEmoticonMap.containsKey(key) }
+        if (entries.isEmpty()) return emptyMap()
+        val stickerMaxPx = EmoticonUtil.MEME_STICKER_SIZE_DP *
+            App.INSTANCE.resources.displayMetrics.density
+        return entries.associate { (key, width, height) ->
+            val (drawWidth, drawHeight) = if (stickerSize) {
+                fitMemeBox(width, height, stickerMaxPx)
+            } else {
+                sizePx to sizePx
+            }
+            "${EmoticonUtil.MEME_INLINE_PREFIX}$key|$width|$height" to InlineTextContent(
                 placeholder = Placeholder(
-                    sizePx.pxToSp().sp,
-                    sizePx.pxToSp().sp,
+                    drawWidth.pxToSp().sp,
+                    drawHeight.pxToSp().sp,
                     PlaceholderVerticalAlign.TextCenter
                 ),
                 children = {
                     AsyncImage(
                         imageUri = memeEmoticonMap[key].orEmpty(),
                         contentDescription = stringResource(id = R.string.emoticon, key),
-                        modifier = Modifier.size(sizePx.pxToDp().dp)
+                        modifier = Modifier.size(
+                            drawWidth.pxToDp().dp,
+                            drawHeight.pxToDp().dp
+                        )
                     )
                 }
             )
         }
     }
+
+    /** 原始宽高比适配进 maxSide 正方形（宽高缺失按 1:1 处理） */
+    private fun fitMemeBox(width: Int, height: Int, maxSide: Float): Pair<Float, Float> =
+        if (width <= 0 || height <= 0) {
+            maxSide to maxSide
+        } else if (width >= height) {
+            maxSide to maxSide * height / width
+        } else {
+            maxSide * width / height to maxSide
+        }
 
     fun getEmoticonInlineContent(
         sizePx: Float

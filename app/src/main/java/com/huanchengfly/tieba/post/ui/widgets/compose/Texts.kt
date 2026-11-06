@@ -79,6 +79,7 @@ fun EmoticonText(
     softWrap: Boolean = true,
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
+    memeStickerSize: Boolean = true,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
 ) {
@@ -102,6 +103,7 @@ fun EmoticonText(
         maxLines,
         minLines,
         inlineContent = emptyMap(),
+        memeStickerSize = memeStickerSize,
         onTextLayout = onTextLayout,
         style = style
     )
@@ -126,6 +128,7 @@ fun EmoticonText(
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
     emoticonSize: Float = 0.9f,
+    memeStickerSize: Boolean = true,
     inlineContent: Map<String, InlineTextContent> = emptyMap(),
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current
@@ -154,8 +157,14 @@ fun EmoticonText(
     val emoticonInlineContent =
         remember(sizePx) { EmoticonManager.getEmoticonInlineContent(sizePx * emoticonSize) }
     val emoticonText = remember(text) { text.emoticonString }
-    val memeInlineContent = remember(emoticonText, sizePx, EmoticonManager.memeVersion) {
-        EmoticonManager.buildMemeInlineContent(emoticonText, sizePx * emoticonSize)
+    val memeInlineContent = remember(
+        emoticonText, sizePx, EmoticonManager.memeVersion, memeStickerSize
+    ) {
+        EmoticonManager.buildMemeInlineContent(
+            emoticonText,
+            sizePx * emoticonSize,
+            memeStickerSize
+        )
     }
     IconText(
         emoticonText,
@@ -425,6 +434,7 @@ fun HighlightText(
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
     emoticonSize: Float = 0.9f,
+    memeStickerSize: Boolean = false,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
     highlightKeywords: List<String> = emptyList(),
@@ -449,6 +459,7 @@ fun HighlightText(
         maxLines = maxLines,
         minLines = minLines,
         emoticonSize = emoticonSize,
+        memeStickerSize = memeStickerSize,
         onTextLayout = onTextLayout,
         style = style,
         highlightKeywords = highlightKeywords,
@@ -476,6 +487,7 @@ fun HighlightText(
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
     emoticonSize: Float = 0.9f,
+    memeStickerSize: Boolean = false,
     inlineContent: Map<String, InlineTextContent> = emptyMap(),
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
@@ -526,6 +538,7 @@ fun HighlightText(
         maxLines = maxLines,
         minLines = minLines,
         emoticonSize = emoticonSize,
+        memeStickerSize = memeStickerSize,
         inlineContent = inlineContent,
         onTextLayout = onTextLayout,
         style = style,

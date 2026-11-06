@@ -113,11 +113,13 @@ object StringUtil {
             val url = EmoticonManager.getMemeUrl(key) ?: continue
             val drawable = memeDrawableCache.get(url)
             if (drawable != null) {
-                val paint = tv.paint
-                val size = (-paint.ascent() + paint.descent()).roundToInt()
-                val (width, height) = parseMemeSize(group)
+                val (width, height) = EmoticonUtil.parseMemeSize(group)
+                // 贴纸口径：与正文 Compose 渲染一致，按原始宽高比适配进上限方框
+                val maxSide =
+                    (EmoticonUtil.MEME_STICKER_SIZE_DP * tv.resources.displayMetrics.density)
+                        .roundToInt()
                 text.setSpan(
-                    MemeImageSpan(drawable, width, height, size),
+                    MemeImageSpan(drawable, width, height, maxSide),
                     matcher.start(),
                     matcher.end(),
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -126,14 +128,6 @@ object StringUtil {
                 loadMemeDrawable(tv, url)
             }
         }
-    }
-
-    /** 解析 sharpText 中的原始宽高：`collect_xxx,150,150,md5` → 150 x 150 */
-    private fun parseMemeSize(group: String): Pair<Int, Int> {
-        val parts = group.substringAfter(',', "").split(',')
-        val width = parts.getOrNull(0)?.toIntOrNull() ?: 0
-        val height = parts.getOrNull(1)?.toIntOrNull() ?: 0
-        return width to height
     }
 
     /** 异步加载个人表情图片，完成后重扫当前文本补 span（失败时保持纯文本降级） */

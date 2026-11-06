@@ -297,6 +297,7 @@ fun PbContentText(
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
     emoticonSize: Float = 0.9f,
+    memeStickerSize: Boolean = true,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
 ) {
@@ -318,6 +319,7 @@ fun PbContentText(
         maxLines = maxLines,
         minLines = minLines,
         emoticonSize = emoticonSize,
+        memeStickerSize = memeStickerSize,
         inlineContent = emptyMap(),
         onTextLayout = onTextLayout,
         style = style
@@ -397,6 +399,7 @@ fun PbContentText(
     maxLines: Int = Int.MAX_VALUE,
     minLines: Int = 1,
     emoticonSize: Float = 0.9f,
+    memeStickerSize: Boolean = true,
     inlineContent: Map<String, InlineTextContent> = emptyMap(),
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
@@ -450,6 +453,7 @@ fun PbContentText(
         maxLines = maxLines,
         minLines = minLines,
         emoticonSize = emoticonSize,
+        memeStickerSize = memeStickerSize,
         inlineContent = inlineContent,
         onTextLayout = {
             layoutResult.value = it

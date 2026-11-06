@@ -21,6 +21,12 @@ object EmoticonUtil {
     /** 个人表情（贴吧表情包）InlineContent 键前缀，完整键为 `MemeEmoticon#{sharpKey}` */
     const val MEME_INLINE_PREFIX = "MemeEmoticon#"
 
+    /**
+     * 个人表情贴纸在正文中的展示上限（dp）：按原始宽高比适配进该正方形。
+     * 贴纸类内容按经典小黄脸的行高渲染会小得离谱，统一放大到贴纸口径。
+     */
+    const val MEME_STICKER_SIZE_DP = 96
+
     @RegExp
     private val REGEX_WEB = "\\(#(([\u4e00-\u9fa5\\w\u007e])+)\\)"
 
@@ -187,14 +193,27 @@ object EmoticonUtil {
     private fun AnnotatedString.Builder.appendMemeAnnotations(text: CharSequence) {
         val matcher = Pattern.compile(REGEX_MEME).matcher(text)
         while (matcher.find()) {
-            val rawKey = matcher.group(1)?.substringBefore(',') ?: continue
-            val key = EmoticonManager.resolveMemeKey(rawKey) ?: continue
+            val group = matcher.group(1) ?: continue
+            val key = EmoticonManager.resolveMemeKey(group.substringBefore(',')) ?: continue
+            // 注解携带原始宽高，供渲染端按贴纸口径定尺寸：`MemeEmoticon#{key}|{w}|{h}`
+            val (width, height) = parseMemeSize(group)
             addStringAnnotation(
                 INLINE_CONTENT_TAG,
-                "$MEME_INLINE_PREFIX$key",
+                "$MEME_INLINE_PREFIX$key|$width|$height",
                 matcher.start(),
                 matcher.end(),
             )
         }
+    }
+
+    /**
+     * 解析个人表情 sharpText 的原始宽高：`collect_xxx,150,150,md5` → 150 x 150。
+     * 缺失或非法时返回 0，由渲染端按 1:1 兜底。
+     */
+    fun parseMemeSize(group: String): Pair<Int, Int> {
+        val parts = group.substringAfter(',', "").split(',')
+        val width = parts.getOrNull(0)?.toIntOrNull() ?: 0
+        val height = parts.getOrNull(1)?.toIntOrNull() ?: 0
+        return width to height
     }
 }

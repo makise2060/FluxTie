@@ -91,10 +91,9 @@ class HotViewModel @Inject constructor() :
                 .onStart { emit(HotPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
                 .catch { emit(HotPartialChange.Agree.Failure(threadId, hasAgree, it)) }
 
-        // 热榜话题列表接口不下发头图：对前三逐个走话题详情接口补 topic_image（issue 实测）
+        // 热榜话题列表接口不下发头图：逐个走话题详情接口补 topic_image，逐条上屏
         private fun HotUiIntent.LoadTopicImages.producePartialChange(): Flow<HotPartialChange.TopicImages> =
             flow {
-                val images = mutableMapOf<String, String>()
                 for ((topicId, topicName) in topics) {
                     val image = runCatching {
                         TiebaApi.getInstance()
@@ -106,10 +105,9 @@ class HotViewModel @Inject constructor() :
                         android.util.Log.w("HotTopicImages", "topic $topicId 头图获取失败", it)
                     }.getOrNull()
                     if (!image.isNullOrBlank()) {
-                        images[topicId.toString()] = image
+                        emit(HotPartialChange.TopicImages(mapOf(topicId.toString() to image)))
                     }
                 }
-                emit(HotPartialChange.TopicImages(images))
             }
     }
 }

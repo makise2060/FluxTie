@@ -1,19 +1,25 @@
 package com.huanchengfly.tieba.post.ui.page.main.explore.hot
 
 import android.graphics.Typeface
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.LocalIndication
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.ExperimentalMaterialApi
@@ -26,11 +32,17 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -40,7 +52,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eygraber.compose.placeholder.material.placeholder
-import androidx.compose.foundation.lazy.LazyRow
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.api.models.protos.hasAgree
 import com.huanchengfly.tieba.post.arch.GlobalEvent
@@ -71,9 +82,6 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.feedCardListSpacing
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
-import com.huanchengfly.tieba.post.ui.widgets.compose.ProvideContentColor
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalDivider
-import com.huanchengfly.tieba.post.ui.widgets.compose.VerticalGrid
 import com.huanchengfly.tieba.post.ui.widgets.compose.debounceClickable
 import com.huanchengfly.tieba.post.ui.widgets.compose.items
 import com.huanchengfly.tieba.post.ui.widgets.compose.itemsIndexed
@@ -124,9 +132,9 @@ fun HotPage(
         prop1 = HotUiState::isLoadingThreadList,
         initial = false
     )
-    // 热榜接口的 topic_pic 为空：对前三里仍无头图的话题逐个补详情图（只触发一次，结果由 ViewModel 持有）
+    // 热榜接口的 topic_pic 为空：对整条话题榜逐个补详情图（只触发一次，结果由 ViewModel 持有并逐条追加）
     LaunchedEffect(topicList) {
-        val missing = topicList.take(3)
+        val missing = topicList
             .filter {
                 it.get { topicPic }.isBlank() &&
                     topicImages[it.get { topicId }.toString()].isNullOrBlank()
@@ -160,90 +168,122 @@ fun HotPage(
             if (topicList.isNotEmpty()) {
                 item(key = "TopicHeader") {
                     Container {
-                        Box(
+                        // 标题与「展开话题榜」入口合并为一行（原底部「查看完整榜单」整条入口移除）
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .padding(bottom = 8.dp)
                                 .padding(horizontal = 16.dp)
-                        ) { ChipHeader(text = stringResource(id = R.string.hot_topic_rank)) }
-                    }
-                }
-                item(key = "TopicList") {
-                    Container {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            itemsIndexed(
-                                items = topicList.take(3),
-                                key = { _, item -> "TopicCard_${item.get { topicId }}" }
-                            ) { index, item ->
-                                TopicHorizontalCard(
-                                    rank = index + 1,
-                                    title = item.get { topicName },
-                                    imageUrl = topicImages[item.get { topicId }.toString()]
-                                        .orEmpty()
-                                        .ifBlank { item.get { topicPic } },
-                                    discussNum = item.get { discussNum },
-                                    tag = item.get { tag },
-                                    onClick = {
-                                        navigator.navigate(
-                                            TopicDetailPageDestination(
-                                                item.get { topicId },
-                                                item.get { topicName },
-                                                rank = index + 1,
-                                                tag = item.get { tag }
-                                            )
-                                        )
-                                    }
+                                .debounceClickable(
+                                    onClick = { navigator.navigate(HotTopicListPageDestination) }
                                 )
-                            }
-                        }
-                    }
-                }
-                item(key = "TopicMore") {
-                    Container(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 8.dp)
-                    ) {
-                        ProvideContentColor(color = ExtendedTheme.colors.primary) {
+                        ) {
+                            ChipHeader(text = stringResource(id = R.string.hot_topic_rank))
+                            Spacer(modifier = Modifier.weight(1f))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(ExtendedTheme.colors.chip)
-                                    .debounceClickable(
-                                        indication = LocalIndication.current,
-                                        onClick = { navigator.navigate(HotTopicListPageDestination) }
-                                    )
-                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Text(
-                                    text = stringResource(id = R.string.tip_view_full_rank),
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    modifier = Modifier.weight(1f)
+                                    text = stringResource(id = R.string.title_topic_rank_expand),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = ExtendedTheme.colors.textSecondary
                                 )
                                 Icon(
                                     imageVector = Icons.Rounded.KeyboardArrowRight,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                    tint = ExtendedTheme.colors.textSecondary,
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
                     }
                 }
-                item(key = "TopicDivider") {
+                item(key = "TopicList") {
                     Container {
-                        VerticalDivider(
+                        val topicListState = rememberLazyListState()
+                        val colors = ExtendedTheme.colors
+                        Box(
                             modifier = Modifier
-                                .padding(top = 16.dp, bottom = 8.dp)
-                                .padding(horizontal = 16.dp),
-                            thickness = 0.5.dp
-                        )
+                                .fillMaxWidth()
+                                .drawWithContent {
+                                    drawContent()
+                                    // 右缘渐隐：暗示榜单还有更多内容（滚到末尾自动消失）
+                                    if (topicListState.canScrollForward) {
+                                        val fadeWidth = 36.dp.toPx()
+                                        drawRect(
+                                            brush = Brush.horizontalGradient(
+                                                colors = listOf(Color.Transparent, colors.background),
+                                                startX = size.width - fadeWidth,
+                                                endX = size.width
+                                            ),
+                                            topLeft = Offset(size.width - fadeWidth, 0f),
+                                            size = Size(fadeWidth, size.height)
+                                        )
+                                    }
+                                }
+                        ) {
+                            LazyRow(
+                                state = topicListState,
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                itemsIndexed(
+                                    items = topicList,
+                                    key = { _, item -> "TopicCard_${item.get { topicId }}" }
+                                ) { index, item ->
+                                    TopicHorizontalCard(
+                                        rank = index + 1,
+                                        title = item.get { topicName },
+                                        imageUrl = topicImages[item.get { topicId }.toString()]
+                                            .orEmpty()
+                                            .ifBlank { item.get { topicPic } },
+                                        discussNum = item.get { discussNum },
+                                        tag = item.get { tag },
+                                        onClick = {
+                                            navigator.navigate(
+                                                TopicDetailPageDestination(
+                                                    item.get { topicId },
+                                                    item.get { topicName },
+                                                    rank = index + 1,
+                                                    tag = item.get { tag }
+                                                )
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                            // 滑动引导：未滑到末尾时在右缘悬浮一枚圆形箭头，滚到底自动隐藏
+                            val canScrollForward by remember {
+                                derivedStateOf { topicListState.canScrollForward }
+                            }
+                            AnimatedVisibility(
+                                visible = canScrollForward && topicList.size > 3,
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(end = 6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(26.dp)
+                                        .clip(CircleShape)
+                                        .background(ExtendedTheme.colors.chip),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = ExtendedTheme.colors.onChip,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

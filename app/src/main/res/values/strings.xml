@@ -25,6 +25,10 @@
     <string name="easter_egg_off">🎉 您发现了隐藏彩蛋!实验特性已关闭</string>
     <string name="title_about_info">信息</string>
     <string name="title_about_develop">开发</string>
+    <string name="title_about_feedback">反馈</string>
+    <string name="title_feedback_github_issue">通过 GitHub Issue 反馈</string>
+    <string name="title_feedback_email">通过邮件反馈</string>
+    <string name="tip_feedback_email">访问 GitHub 不方便时，欢迎邮件联系</string>
     <string name="title_check_update">检查更新</string>
     <string name="title_open_source_license">开源许可</string>
     <string name="title_project_source">项目源码</string>
@@ -419,6 +423,7 @@
     <string name="tip_add_block">可用空格分隔多个关键词，含有全部关键词的内容将会被屏蔽</string>
     <string name="desc_download_pic">下载图片</string>
     <string name="hot_topic_rank">话题榜</string>
+    <string name="title_topic_rank_expand">展开</string>
     <string name="topic_tag_hot">热</string>
     <string name="topic_tag_new">新</string>
     <string name="title_hot">热榜</string>
@@ -438,7 +443,6 @@
     <string name="title_topic_list_empty">话题榜暂无内容</string>
     <string name="title_topic_list_failed">话题榜加载失败</string>
     <string name="tip_load_failed_retry">出错了，请检查网络后重试</string>
-    <string name="tip_view_full_rank">查看完整榜单</string>
     <string name="button_expand_long_image">展开长图</string>
     <string name="tip_settings_search_hint">搜索设置</string>
     <string name="tip_settings_search_no_result">没有找到相关设置</string>

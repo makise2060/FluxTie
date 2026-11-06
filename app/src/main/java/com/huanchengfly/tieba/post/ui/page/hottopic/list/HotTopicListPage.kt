@@ -125,7 +125,12 @@ fun HotTopicListPage(
                             imageUrl = item.topic_image,
                             onClick = {
                                 navigator.navigate(
-                                    TopicDetailPageDestination(item.topic_id, item.topic_name)
+                                    TopicDetailPageDestination(
+                                        item.topic_id,
+                                        item.topic_name,
+                                        rank = index + 1,
+                                        tag = item.topic_tag
+                                    )
                                 )
                             }
                         )

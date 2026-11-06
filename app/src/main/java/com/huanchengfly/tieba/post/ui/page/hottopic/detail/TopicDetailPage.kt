@@ -74,6 +74,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.FeedCard
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.NetworkImage
 import com.huanchengfly.tieba.post.ui.widgets.compose.RankBadge
+import com.huanchengfly.tieba.post.ui.widgets.compose.TopicTagChip
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
@@ -108,6 +109,8 @@ fun TopicDetailPage(
     topicId: Long,
     topicName: String,
     navigator: DestinationsNavigator,
+    rank: Int = 0,
+    tag: Int = 0,
     viewModel: TopicDetailViewModel = pageViewModel()
 ) {
     val pageSize = 10
@@ -195,6 +198,7 @@ fun TopicDetailPage(
                     TopicToolbar(
                         topicInfo = topicInfo,
                         topicName = topicName,
+                        fallbackRank = rank,
                         showTitle = !isShowTopBarArea,
                         topicId = topicId
                     )
@@ -290,6 +294,8 @@ fun TopicDetailPage(
                                         TopicHeader(
                                             topicInfo = it,
                                             relateForums = relateForum,
+                                            fallbackRank = rank,
+                                            tag = tag,
                                             onForumClick = { name ->
                                                 navigator.navigate(ForumPageDestination(name))
                                             },
@@ -391,6 +397,7 @@ fun TopicDetailPage(
 private fun TopicToolbar(
     topicInfo: TopicInfoBean?,
     topicName: String,
+    fallbackRank: Int,
     showTitle: Boolean,
     topicId: Long? = null,
 ) {
@@ -403,8 +410,10 @@ private fun TopicToolbar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (topicInfo != null && topicInfo.idxNum > 0) {
-                        RankBadge(rank = topicInfo.idxNum)
+                    // 详情接口的 idx_num 对非榜首可能为 0：回退用列表传入的名次
+                    val displayRank = topicInfo?.idxNum?.takeIf { it > 0 } ?: fallbackRank
+                    if (displayRank > 0) {
+                        RankBadge(rank = displayRank)
                     }
                     Text(
                         text = stringResource(
@@ -495,6 +504,8 @@ private fun TopicLoadMoreIndicator(
 private fun TopicHeader(
     topicInfo: TopicInfoBean,
     relateForums: List<RelateForumBean>,
+    fallbackRank: Int,
+    tag: Int,
     onForumClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -553,8 +564,15 @@ private fun TopicHeader(
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                if (topicInfo.idxNum > 0) {
-                    RankBadge(rank = topicInfo.idxNum)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val displayRank = topicInfo.idxNum.takeIf { it > 0 } ?: fallbackRank
+                    if (displayRank > 0) {
+                        RankBadge(rank = displayRank)
+                    }
+                    TopicTagChip(tag = tag)
                 }
                 // 话题全称不截断：榜内话题名往往较长，截断后无法辨认具体话题
                 Text(

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowRight
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -115,10 +116,26 @@ fun HotPage(
         prop1 = HotUiState::currentTabCode,
         initial = "all"
     )
+    val topicImages by viewModel.uiState.collectPartialAsState(
+        prop1 = HotUiState::topicImages,
+        initial = emptyMap()
+    )
     val isLoadingThreadList by viewModel.uiState.collectPartialAsState(
         prop1 = HotUiState::isLoadingThreadList,
         initial = false
     )
+    // 热榜接口的 topic_pic 为空：对前三里仍无头图的话题逐个补详情图（只触发一次，结果由 ViewModel 持有）
+    LaunchedEffect(topicList) {
+        val missing = topicList.take(3)
+            .filter {
+                it.get { topicPic }.isBlank() &&
+                    topicImages[it.get { topicId }.toString()].isNullOrBlank()
+            }
+            .associate { it.get { topicId } to it.get { topicName } }
+        if (missing.isNotEmpty()) {
+            viewModel.send(HotUiIntent.LoadTopicImages(missing))
+        }
+    }
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isLoading,
         onRefresh = { viewModel.send(HotUiIntent.Load) })
@@ -164,12 +181,19 @@ fun HotPage(
                                 TopicHorizontalCard(
                                     rank = index + 1,
                                     title = item.get { topicName },
-                                    imageUrl = item.get { topicPic },
+                                    imageUrl = topicImages[item.get { topicId }.toString()]
+                                        .orEmpty()
+                                        .ifBlank { item.get { topicPic } },
                                     discussNum = item.get { discussNum },
                                     tag = item.get { tag },
                                     onClick = {
                                         navigator.navigate(
-                                            TopicDetailPageDestination(item.get { topicId }, item.get { topicName })
+                                            TopicDetailPageDestination(
+                                                item.get { topicId },
+                                                item.get { topicName },
+                                                rank = index + 1,
+                                                tag = item.get { tag }
+                                            )
                                         )
                                     }
                                 )

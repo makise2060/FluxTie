@@ -22,7 +22,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
@@ -47,6 +49,8 @@ class HotViewModel @Inject constructor() :
                 intentFlow.filterIsInstance<HotUiIntent.RefreshThreadList>()
                     .flatMapConcat { it.producePartialChange() },
                 intentFlow.filterIsInstance<HotUiIntent.Agree>()
+                    .flatMapConcat { it.producePartialChange() },
+                intentFlow.filterIsInstance<HotUiIntent.LoadTopicImages>()
                     .flatMapConcat { it.producePartialChange() },
             )
 
@@ -86,6 +90,24 @@ class HotViewModel @Inject constructor() :
                 }
                 .onStart { emit(HotPartialChange.Agree.Start(threadId, hasAgree xor 1)) }
                 .catch { emit(HotPartialChange.Agree.Failure(threadId, hasAgree, it)) }
+
+        // 热榜话题列表接口不下发头图：对前三逐个走话题详情接口补 topic_image（issue 实测）
+        private fun HotUiIntent.LoadTopicImages.producePartialChange(): Flow<HotPartialChange.TopicImages> =
+            flow {
+                val images = mutableMapOf<String, String>()
+                for ((topicId, topicName) in topics) {
+                    val image = runCatching {
+                        TiebaApi.getInstance()
+                            .topicDetailFlow(topicId.toString(), topicName, 1, 1, 1, 1, 0, "")
+                            .first()
+                            .data.topicInfo.topicImage
+                    }.getOrNull()
+                    if (!image.isNullOrBlank()) {
+                        images[topicId.toString()] = image
+                    }
+                }
+                emit(HotPartialChange.TopicImages(images))
+            }
     }
 }
 
@@ -99,6 +121,8 @@ sealed interface HotUiIntent : UiIntent {
         val postId: Long,
         val hasAgree: Int
     ) : HotUiIntent
+
+    data class LoadTopicImages(val topics: Map<Long, String>) : HotUiIntent
 }
 
 sealed interface HotPartialChange : PartialChange<HotUiState> {
@@ -154,6 +178,13 @@ sealed interface HotPartialChange : PartialChange<HotUiState> {
             val tabCode: String,
             val error: Throwable
         ) : RefreshThreadList()
+    }
+
+    data class TopicImages(
+        val images: Map<String, String>
+    ) : HotPartialChange {
+        override fun reduce(oldState: HotUiState): HotUiState =
+            oldState.copy(topicImages = oldState.topicImages + images)
     }
 
     sealed class Agree private constructor() : HotPartialChange {
@@ -254,6 +285,7 @@ data class HotUiState(
     val topicList: ImmutableList<ImmutableHolder<RecommendTopicList>> = persistentListOf(),
     val tabList: ImmutableList<ImmutableHolder<FrsTabInfo>> = persistentListOf(),
     val threadList: ImmutableList<ImmutableHolder<ThreadInfo>> = persistentListOf(),
+    val topicImages: Map<String, String> = emptyMap(),
 ) : UiState
 
 sealed interface HotUiEvent : UiEvent

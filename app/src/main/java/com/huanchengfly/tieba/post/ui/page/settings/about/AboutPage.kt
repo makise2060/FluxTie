@@ -9,6 +9,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,8 +38,11 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.RateReview
+import androidx.compose.material.icons.rounded.Report
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -83,6 +88,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val REPO_URL = "https://github.com/makise2060/FluxTie"
+
+/** 问题反馈邮箱（GitHub 访问不便时的兜底渠道） */
+private const val FEEDBACK_EMAIL = "makise2060@gmail.com"
 
 @Destination
 @Composable
@@ -326,6 +334,53 @@ fun AboutPage(
                             )
                         },
                         onClick = { navigator.navigate(LogPageDestination) }
+                    )
+                }
+            }
+
+            // ── 反馈：GitHub Issue 直达 + 邮件兜底
+            item {
+                SectionLabel(
+                    text = stringResource(id = R.string.title_about_feedback),
+                    icon = Icons.Rounded.RateReview
+                )
+            }
+            item {
+                AppearanceCard {
+                    SettingRow(
+                        icon = Icons.Rounded.Report,
+                        title = stringResource(id = R.string.title_feedback_github_issue),
+                        summary = "makise2060/FluxTie",
+                        trailing = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                                contentDescription = null,
+                                tint = ExtendedTheme.colors.textSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        onClick = { launchUrl(context, navigator, "$REPO_URL/issues/new") }
+                    )
+                    CardDivider()
+                    SettingRow(
+                        icon = Icons.Rounded.Email,
+                        title = stringResource(id = R.string.title_feedback_email),
+                        summary = FEEDBACK_EMAIL,
+                        trailing = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                                contentDescription = null,
+                                tint = ExtendedTheme.colors.textSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        onClick = {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$FEEDBACK_EMAIL"))
+                                )
+                            }
+                        }
                     )
                 }
             }

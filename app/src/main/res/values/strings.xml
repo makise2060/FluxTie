@@ -444,6 +444,9 @@
     <string name="title_topic_list_failed">话题榜加载失败</string>
     <string name="tip_load_failed_retry">出错了，请检查网络后重试</string>
     <string name="button_expand_long_image">展开长图</string>
+    <string name="tip_read_resume">上次看到 %1$d 楼</string>
+    <string name="button_read_resume">续看</string>
+    <string name="button_clear_draft">清空草稿</string>
     <string name="tip_settings_search_hint">搜索设置</string>
     <string name="tip_settings_search_no_result">没有找到相关设置</string>
     <string name="tip_settings_search_in_page">位于 %s</string>

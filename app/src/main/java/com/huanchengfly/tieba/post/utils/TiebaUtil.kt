@@ -72,6 +72,19 @@ object TiebaUtil {
                     AlarmManager.INTERVAL_DAY,
                     pendingIntent
                 )
+            } else {
+                // 定时点已过（开机晚了/闹钟被杀）：当天还没签就启动即补签，
+                // 闹钟顺延到明天——setRepeating 对过去时刻会立即触发，不能直接约今天
+                if (context.appPreferences.signDay != calendar[Calendar.DAY_OF_MONTH]) {
+                    startSign(context)
+                }
+                calendar.add(Calendar.DAY_OF_MONTH, 1)
+                alarmManager.setRepeating(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    AlarmManager.INTERVAL_DAY,
+                    pendingIntent
+                )
             }
         } else {
             alarmManager.cancel(pendingIntent)

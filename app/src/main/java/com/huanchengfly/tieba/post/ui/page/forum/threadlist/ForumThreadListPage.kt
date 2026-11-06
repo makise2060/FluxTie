@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -20,12 +22,20 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -175,6 +185,7 @@ private fun TopThreadItem(
 private fun ThreadList(
     state: LazyListState,
     items: ImmutableList<ThreadItemData>,
+    forumName: String,
     onItemClicked: (ThreadInfo) -> Unit,
     onItemReplyClicked: (ThreadInfo) -> Unit,
     onAgree: (ThreadInfo) -> Unit,
@@ -188,6 +199,14 @@ private fun ThreadList(
         WindowWidthSizeClass.Expanded -> 0.5f
         else -> 1f
     }
+    val ruleTitle = forumRuleTitle?.takeIf { it.isNotEmpty() }
+    // 置顶帖由服务端排在最前，按 isTop 拆成独立区块，折叠时整块收起（issue #28）
+    val (pinned, normal) = remember(items) {
+        items.partition { it.thread.get { isTop } == 1 }
+    }
+    var pinnedExpanded by rememberSaveable(forumName) { mutableStateOf(true) }
+    val hasPinnedSection = pinned.isNotEmpty() || ruleTitle != null
+
     MyLazyColumn(
         state = state,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -198,67 +217,154 @@ private fun ThreadList(
             bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         )
     ) {
-        if (!forumRuleTitle.isNullOrEmpty()) {
-            item(key = "ForumRule") {
-                TopThreadItem(
-                    title = forumRuleTitle,
-                    onClick = {
-                        onOpenForumRule?.invoke()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    type = stringResource(id = R.string.desc_forum_rule)
+        if (hasPinnedSection) {
+            item(key = "PinnedSectionHeader") {
+                PinnedSectionHeader(
+                    expanded = pinnedExpanded,
+                    itemCount = pinned.size + if (ruleTitle != null) 1 else 0,
+                    modifier = Modifier.fillMaxWidth(itemFraction),
+                    onToggle = { pinnedExpanded = !pinnedExpanded }
+                )
+            }
+        }
+        if (pinnedExpanded) {
+            if (ruleTitle != null) {
+                item(key = "ForumRule") {
+                    TopThreadItem(
+                        title = ruleTitle,
+                        onClick = {
+                            onOpenForumRule?.invoke()
+                        },
+                        modifier = Modifier.fillMaxWidth(itemFraction),
+                        type = stringResource(id = R.string.desc_forum_rule)
+                    )
+                }
+            }
+            itemsIndexed(
+                items = pinned,
+                key = { index, data -> "pinned_${index}_${data.thread.get { id }}" },
+                contentType = { _, data -> data.contentType() }
+            ) { _, data ->
+                ThreadRow(
+                    data = data,
+                    itemFraction = itemFraction,
+                    onItemClicked = onItemClicked,
+                    onItemReplyClicked = onItemReplyClicked,
+                    onAgree = onAgree,
+                    onOriginThreadClicked = onOriginThreadClicked,
+                    onUserClicked = onUserClicked
                 )
             }
         }
         itemsIndexed(
-            items = items,
-            key = { index, (holder) ->
-                val (item) = holder
-                "${index}_${item.id}"
-            },
-            contentType = { _, (holder) ->
-                val (item) = holder
-                if (item.isTop == 1) ItemType.Top
-                else {
-                    if (item.media.isNotEmpty())
-                        if (item.media.size == 1) ItemType.SingleMedia else ItemType.MultiMedia
-                    else if (item.videoInfo != null)
-                        ItemType.Video
-                    else ItemType.PlainText
-                }
-            }
-        ) { index, (holder, blocked) ->
-            BlockableContent(
-                blocked = blocked,
-                blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp, horizontal = 10.dp),
-            ) {
-                val (item) = holder
-                Column(
-                    modifier = Modifier.fillMaxWidth(itemFraction)
-                ) {
-                    if (item.isTop == 1) {
-                        val title = item.title.takeUnless { it.isBlank() } ?: item.abstractText
-                        TopThreadItem(
-                            title = title,
-                            onClick = { onItemClicked(item) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    } else {
-                        FeedCard(
-                            item = holder,
-                            onClick = onItemClicked,
-                            onClickReply = onItemReplyClicked,
-                            onAgree = onAgree,
-                            onClickOriginThread = onOriginThreadClicked,
-                            onClickUser = onUserClicked
-                        )
-                    }
-                }
+            items = normal,
+            key = { index, data -> "thread_${index}_${data.thread.get { id }}" },
+            contentType = { _, data -> data.contentType() }
+        ) { _, data ->
+            ThreadRow(
+                data = data,
+                itemFraction = itemFraction,
+                onItemClicked = onItemClicked,
+                onItemReplyClicked = onItemReplyClicked,
+                onAgree = onAgree,
+                onOriginThreadClicked = onOriginThreadClicked,
+                onUserClicked = onUserClicked
+            )
+        }
+    }
+}
+
+private fun ThreadItemData.contentType(): ItemType {
+    val item = thread.get()
+    return if (item.isTop == 1) ItemType.Top
+    else {
+        if (item.media.isNotEmpty())
+            if (item.media.size == 1) ItemType.SingleMedia else ItemType.MultiMedia
+        else if (item.videoInfo != null)
+            ItemType.Video
+        else ItemType.PlainText
+    }
+}
+
+@Composable
+private fun ThreadRow(
+    data: ThreadItemData,
+    itemFraction: Float,
+    onItemClicked: (ThreadInfo) -> Unit,
+    onItemReplyClicked: (ThreadInfo) -> Unit,
+    onAgree: (ThreadInfo) -> Unit,
+    onOriginThreadClicked: (OriginThreadInfo) -> Unit,
+    onUserClicked: (User) -> Unit,
+) {
+    BlockableContent(
+        blocked = data.blocked,
+        blockedTip = { BlockTip(text = { Text(text = stringResource(id = R.string.tip_blocked_thread)) }) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp, horizontal = 10.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(itemFraction)
+        ) {
+            val item = data.thread.get()
+            if (item.isTop == 1) {
+                val title = item.title.takeUnless { it.isBlank() } ?: item.abstractText
+                TopThreadItem(
+                    title = title,
+                    onClick = { onItemClicked(item) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                FeedCard(
+                    item = data.thread,
+                    onClick = onItemClicked,
+                    onClickReply = onItemReplyClicked,
+                    onAgree = onAgree,
+                    onClickOriginThread = onOriginThreadClicked,
+                    onClickUser = onUserClicked
+                )
             }
         }
+    }
+}
+
+/** 折叠「置顶与吧规」区块的一行入口：收起后只占一行，把首屏让给帖子列表。 */
+@Composable
+private fun PinnedSectionHeader(
+    expanded: Boolean,
+    itemCount: Int,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .debounceClickable(onClick = onToggle)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Chip(
+            text = stringResource(id = R.string.content_top),
+            shape = RoundedCornerShape(3.dp)
+        )
+        Text(
+            text = stringResource(id = R.string.title_forum_pinned_section),
+            style = MaterialTheme.typography.subtitle2,
+            fontSize = 15.sp,
+            maxLines = 1
+        )
+        Text(
+            text = stringResource(id = R.string.tip_forum_pinned_count, itemCount),
+            style = MaterialTheme.typography.caption,
+            color = ExtendedTheme.colors.textSecondary
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+            contentDescription = null,
+            tint = ExtendedTheme.colors.textSecondary,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
@@ -401,6 +507,7 @@ fun ForumThreadListPage(
                 ThreadList(
                     state = lazyListState,
                     items = threadList,
+                    forumName = forumName,
                     onItemClicked = {
                         navigator.navigate(
                             ThreadPageDestination(

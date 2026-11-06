@@ -229,24 +229,25 @@ object EmoticonManager {
     fun init(context: Context) {
         contextRef = WeakReference(context)
         val emoticonCache = getEmoticonDataCache()
-        if (emoticonCache.ids.isEmpty()) {
-            for (i in 1..50) {
-                emoticonIds.add("image_emoticon$i")
-            }
-            for (i in 61..101) {
-                emoticonIds.add("image_emoticon$i")
-            }
-            for (i in 125..137) {
-                emoticonIds.add("image_emoticon$i")
-            }
-        } else {
-            emoticonIds.addAll(emoticonCache.ids)
+        // 默认集合先落地，再用缓存覆盖：缓存里有服务端学到的真实 name/id 对照（含对默认表的修正），
+        // 但新版本新增的默认表情也不能因为「缓存非空」而永远缺席
+        for (i in 1..50) {
+            emoticonIds.add("image_emoticon$i")
         }
-        if (emoticonCache.mapping.isEmpty()) {
-            emoticonMapping.putAll(DEFAULT_EMOTICON_MAPPING)
-        } else {
-            emoticonMapping.putAll(emoticonCache.mapping)
+        for (i in 61..101) {
+            emoticonIds.add("image_emoticon$i")
         }
+        for (i in 125..137) {
+            emoticonIds.add("image_emoticon$i")
+        }
+        emoticonIds.addAll(emoticonCache.ids)
+        // 每次 init 都会把默认集合再加一遍：缓存文件里的列表必须去重，否则每启动几次就翻倍膨胀
+        emoticonIds.distinct().let {
+            emoticonIds.clear()
+            emoticonIds.addAll(it)
+        }
+        emoticonMapping.putAll(DEFAULT_EMOTICON_MAPPING)
+        emoticonMapping.putAll(emoticonCache.mapping)
         updateCache()
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
@@ -296,11 +297,10 @@ object EmoticonManager {
     }
 
     fun getAllEmoticon(): List<Emoticon> {
-        return emoticonIds.map { id ->
-            Emoticon(
-                id = id,
-                name = getEmoticonNameById(id) ?: ""
-            )
+        // 以「名字」为准出面板：发送走 #(名字)，只要名字可发就必须可选；
+        // 反之按 id 反查名字会丢名字（多个名字指向同一 id 时只留第一个，issue #31）。
+        return emoticonMapping.map { (name, id) ->
+            Emoticon(id = id, name = name)
         }
     }
 
@@ -391,15 +391,29 @@ object EmoticonManager {
     }
 
     fun registerEmoticon(id: String, name: String) {
+        // 没有名字的表情无法通过 #(名字) 发送，登记进面板只会多一个发不出去的格子
+        if (name.isBlank()) return
         val realId = if (id == "image_emoticon") "image_emoticon1" else id
         var changed = false
         if (!emoticonIds.contains(realId)) {
             emoticonIds.add(realId)
             changed = true
         }
-        if (!emoticonMapping.containsKey(name)) {
-            emoticonMapping[name] = realId
-            changed = true
+        val existing = emoticonMapping[name]
+        if (existing != realId) {
+            // 同名不同 id：以服务端下发的 id 为准。否则本地旧映射会让「面板选中的那张图」
+            // 和「发送后服务端按名字还原的那张图」不是同一张（issue #31）。
+            // 只有规范的 image_emoticonN 才覆盖，避免脏数据把名字改到兜底 id 上。
+            if (CANONICAL_EMOTICON_ID.matches(realId)) {
+                emoticonMapping[name] = realId
+                changed = true
+            }
+            if (existing != null) {
+                android.util.Log.w(
+                    "EmoticonManager",
+                    "emoticon id conflict: name=$name local=$existing server=$realId"
+                )
+            }
         }
         if (changed) {
             coroutineScope.launch {
@@ -407,4 +421,6 @@ object EmoticonManager {
             }
         }
     }
+
+    private val CANONICAL_EMOTICON_ID = Regex("image_emoticon\\d+")
 }

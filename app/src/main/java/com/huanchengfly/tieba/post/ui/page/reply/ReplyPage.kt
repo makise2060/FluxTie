@@ -204,6 +204,9 @@ fun ReplyDialog(
     }
 }
 
+/** 官方贴吧客户端包名（普通版 / 极速版），「使用官方客户端回贴」跳转时优先匹配。 */
+private val OFFICIAL_TIEBA_PACKAGES = setOf("com.baidu.tieba", "com.baidu.tieba_mini")
+
 @OptIn(
     ExperimentalLayoutApi::class,
     FlowPreview::class
@@ -792,12 +795,18 @@ internal fun ReplyPageContent(
                 intent,
                 PackageManager.MATCH_DEFAULT_ONLY
             ).filter { it.activityInfo.packageName != context.packageName }
+        // 必须显式限定包名：本 app 自己也声明了 com.baidu.tieba://unidispatch，
+        // 只 startActivity 原始隐式 intent 会被系统再次解析，很可能又落回自己（issue #30）
+        val targetPackage = resolveInfos
+            .firstOrNull { it.activityInfo.packageName in OFFICIAL_TIEBA_PACKAGES }
+            ?.activityInfo?.packageName
+            ?: resolveInfos.firstOrNull()?.activityInfo?.packageName
+        if (targetPackage == null) {
+            context.toastShort(R.string.toast_official_client_not_install)
+            return
+        }
         try {
-            if (resolveInfos.isNotEmpty()) {
-                context.startActivity(intent)
-            } else {
-                context.toastShort(R.string.toast_official_client_not_install)
-            }
+            context.startActivity(Intent(intent).setPackage(targetPackage))
         } catch (e: ActivityNotFoundException) {
             context.toastShort(R.string.toast_official_client_not_install)
         }

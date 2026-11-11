@@ -5,7 +5,9 @@ import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -413,6 +415,15 @@ private fun FloatingDockImpl(
                 val selected = index == currentPosition
                 Column(
                     modifier = Modifier
+                        // 点击已选中 tab 触发 onReselected（刷新）；未选中则切换 tab。
+                        // 底栏重建（液态玻璃 Dock）前每个条目都有 clickable，
+                        // 重建后只留了 semantics onClick（无障碍），触摸点击丢失——此处恢复。
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            select(index)
+                        }
                         .semantics(mergeDescendants = true) {
                             this.selected = selected
                             role = Role.Tab

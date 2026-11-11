@@ -180,6 +180,15 @@ suspend fun setSortType(
     }
 }
 
+fun getLastTabIndex(context: Context, forumName: String): Int =
+    context.dataStore.getInt("${forumName}_tab_index", -1)
+
+suspend fun setLastTabIndex(context: Context, forumName: String, tabIndex: Int) {
+    context.dataStore.edit {
+        it[intPreferencesKey("${forumName}_tab_index")] = tabIndex
+    }
+}
+
 @Composable
 private fun ForumHeaderPlaceholder(
     forumName: String,
@@ -477,11 +486,23 @@ fun ForumPage(
     val totalPageCount = generalStart + generalTabs.size
 
     val account = LocalAccount.current
-    // 热门按服务端顺序排在最左（tab_id = 1），但落地页仍是「最新」：进吧先看新帖是既有习惯，
-    // 补一栏热门不应该顺带改掉落地页。navTabInfo 与 forumInfo 同源于一次 Load.Success，
-    // pager 首次组合时 hasHotTab 已是最终值，不存在先渲染再纠正的中间态。
+    // 记忆落地方案：进吧后默认回到上次浏览的 tab，符合用户「接着上次看」的预期。
+    // 首次进吧（无记忆）仍落「最新」；只有吧存在「热门」tab 时，「热门」才有资格被记住。
+    // navTabInfo 与 forumInfo 同源于一次 Load.Success，pager 首次组合时记忆与 hasHotTab
+    // 已是最终值，不存在先渲染再纠正的中间态。
+    val initialTab by remember {
+        mutableIntStateOf(
+            getLastTabIndex(context, forumName).let { lastTab ->
+                when {
+                    lastTab == 0 -> 0
+                    lastTab > 0 && lastTab < totalPageCount -> lastTab
+                    else -> latestIndex
+                }
+            }
+        )
+    }
     val pagerState = rememberPagerState(
-        initialPage = latestIndex,
+        initialPage = initialTab,
         pageCount = { totalPageCount }
     )
     val hotListState = rememberLazyListState()
@@ -491,6 +512,13 @@ fun ForumPage(
     val currentPage by remember {
         derivedStateOf {
             pagerState.currentPage
+        }
+    }
+
+    // 记住上次浏览的 tab，下次进吧直接回到该 tab
+    LaunchedEffect(currentPage) {
+        if (currentPage != initialTab) {
+            setLastTabIndex(context, forumName, currentPage)
         }
     }
 
@@ -534,9 +562,9 @@ fun ForumPage(
         derivedStateOf { currentPage < generalStart && isListAtTop && isHeaderExpanded }
     }
 
-    // 落地页不需要校正：热门排在 index 0，有热门时第 0 页就是热门页，没有热门时第 0 页是最新页。
-    // 而且 navTabInfo 与 forumInfo 来自同一个 Load.Success（ForumViewModel），pager 首次组合时
-    // hasHotTab 已是最终值，不存在「先渲染最新再切热门」的中间态需要纠正。
+    // 落地页已由 initialTab（上次记忆）决定：热门排在 index 0，有热门时第 0 页就是热门页，
+    // 没有热门时第 0 页是最新页。navTabInfo 与 forumInfo 来自同一个 Load.Success（ForumViewModel），
+    // pager 首次组合时记忆与 hasHotTab 已是最终值，不需要二次校正。
 
     val isShowTopBarArea by remember {
         derivedStateOf {

@@ -147,10 +147,13 @@ object EmoticonUtil {
                     val start = matcher.start()
                     val end = matcher.end()
                     val emoticonName = matcher.group(1)
-                    if (emoticonName != null) {
+                    // 未登记的名字跳过注解：避免注解值变成 "Emoticon#null"（inlineContent 表无此键，
+                    // Compose 回退显示原始文本，且 null 字符串插值会误导排查）。
+                    val emoticonId = emoticonName?.let { EmoticonManager.getEmoticonIdByName(it) }
+                    if (emoticonName != null && emoticonId != null) {
                         addStringAnnotation(
                             INLINE_CONTENT_TAG,
-                            "Emoticon#${EmoticonManager.getEmoticonIdByName(emoticonName)}",
+                            "Emoticon#$emoticonId",
                             start,
                             end,
                         )
@@ -176,10 +179,13 @@ object EmoticonUtil {
                     val start = matcher.start()
                     val end = matcher.end()
                     val emoticonName = matcher.group(1)
-                    if (emoticonName != null) {
+                    // 未登记的名字跳过注解：避免注解值变成 "Emoticon#null"（inlineContent 表无此键，
+                    // Compose 回退显示原始文本，且 null 字符串插值会误导排查）。
+                    val emoticonId = emoticonName?.let { EmoticonManager.getEmoticonIdByName(it) }
+                    if (emoticonName != null && emoticonId != null) {
                         addStringAnnotation(
                             INLINE_CONTENT_TAG,
-                            "Emoticon#${EmoticonManager.getEmoticonIdByName(emoticonName)}",
+                            "Emoticon#$emoticonId",
                             start,
                             end,
                         )

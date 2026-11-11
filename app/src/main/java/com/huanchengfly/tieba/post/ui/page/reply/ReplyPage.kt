@@ -997,7 +997,10 @@ private fun EmoticonPanel(
 private fun ClassicEmoticonGrid(
     onEmoticonClick: (Emoticon) -> Unit,
 ) {
-    val emoticons = remember {
+    // mappingRevision 为 key：服务端覆盖同名表情 id 时（issue #36），格子列表立即重组，
+    // 保证「格子显示的图片」与「点击后按名字解析出的 id」始终一致。
+    val mappingRevision = EmoticonManager.mappingRevision
+    val emoticons = remember(mappingRevision) {
         EmoticonManager.getAllEmoticon()
             .filter { it.name.isNotEmpty() }
     }

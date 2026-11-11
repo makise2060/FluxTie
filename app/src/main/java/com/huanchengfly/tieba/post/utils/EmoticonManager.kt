@@ -94,7 +94,6 @@ object EmoticonManager {
         "乖" to "image_emoticon28",
         "睡觉" to "image_emoticon29",
         "惊哭" to "image_emoticon30",
-        "生气" to "image_emoticon31",
         "惊讶" to "image_emoticon32",
         "喷" to "image_emoticon33",
         "爱心" to "image_emoticon34",
@@ -114,6 +113,8 @@ object EmoticonManager {
         "大拇指" to "image_emoticon48",
         "弱" to "image_emoticon49",
         "OK" to "image_emoticon50",
+        // 「生气」有两代资源：31 是旧版（WEB 映射表同款），61 是新版（客户端面板实际下发）。
+        // 旧版本 mapOf 重复 key 静默保留 61，新版面板/服务端均按 61 出图，以 61 为权威。
         "生气" to "image_emoticon61",
         "沙发" to "image_emoticon77",
         "手纸" to "image_emoticon78",
@@ -147,14 +148,25 @@ object EmoticonManager {
      * （例如把 `呵呵` 记成 `image_emoticon11`），后续所有帖子都会按错误 id 渲染，
      * 且没有任何自愈路径。版本号递增后，旧缓存的 mapping 不再被信任，只保留 ids，
      * 默认表重建后再接受运行时观察到的对照。
+     *
+     * v1：初始版本；v2：修复缓存污染（issue #33）；v3：裁决「生气」重复 key（默认表
+     * 实际生效 61 而非旧 WEB 映射的 31），使旧缓存中固化的 31 → 61 错误映射失效。
      */
-    private const val MAPPING_VERSION = 2
+    private const val MAPPING_VERSION = 3
 
     private lateinit var contextRef: WeakReference<Context>
     private val emoticonIds: MutableList<String> = mutableListOf()
     private val emoticonMapping: MutableMap<String, String> = mutableMapOf()
     private val drawableCache: MutableMap<String, Drawable> = mutableMapOf()
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+
+    /**
+     * Compose 可观察的 mapping 变更计数器：registerEmoticon 每次实际改动映射时 +1，
+     * 让表情面板等 Composable 以它为 remember key，服务端覆盖后立即重组格子，
+     * 避免「面板图按旧 id、点击解析按新 id」的同会话抖动（issue #36）。
+     */
+    var mappingRevision by mutableStateOf(0)
+        private set
 
     /** 个人表情包内存映射：sharpKey（collect_xxx / diy_xxx）→ 图片 URL */
     private val memeEmoticonMap: MutableMap<String, String> = mutableMapOf()
@@ -473,6 +485,7 @@ object EmoticonManager {
             }
         }
         if (changed) {
+            mappingRevision++
             coroutineScope.launch {
                 updateCache()
             }

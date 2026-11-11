@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Splash" parent="Theme.SplashScreen">
+        <item name="android:windowBackground">@drawable/splash</item>
+        <!-- 夜间：启动屏深色底 + 浅色状态栏图标 -->
+        <item name="android:statusBarColor">@color/colorSplashBg</item>
+        <item name="android:navigationBarColor">@color/colorSplashBg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="windowSplashScreenBackground">@color/colorSplashBg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_screen_anim</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+            <item name="postSplashScreenTheme">@style/Theme.NewAppTheme</item>
+    </style>
+</resources>

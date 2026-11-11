@@ -3,8 +3,12 @@
 
     <style name="Theme.Splash" parent="Theme.SplashScreen">
         <item name="android:windowBackground">@drawable/splash</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- 状态栏/导航栏与启动屏背景同色：避免部分 ROM 上系统启动屏阶段
+             透明状态栏露出系统黑底（issue #34「开屏 logo 无沉浸」） -->
+        <item name="android:statusBarColor">@color/colorSplashBg</item>
+        <item name="android:navigationBarColor">@color/colorSplashBg</item>
+        <!-- 白天启动屏浅色底 + 深色状态栏图标；夜间由 values-night 覆盖 -->
+        <item name="android:windowLightStatusBar">true</item>
         <item name="windowSplashScreenBackground">@color/colorSplashBg</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_screen_anim</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>

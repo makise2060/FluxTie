@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package tieba.im;
+
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.im";
+
+import "im/ImCommon.proto";
+
+// CMD 202003：按消息组增量拉取消息。1v1 私信共用 priv 组，按 lastMsgId 增量返回。
+message GetGroupMsgReqIdl {
+    message GroupMid {
+        int64 groupId = 1;
+        int64 lastMsgId = 2;
+    }
+    message DataReq {
+        repeated GroupMid groupMids = 6;
+        string gettype = 7;
+    }
+    string cuid = 1;
+    DataReq data = 2;
+}
+
+message GetGroupMsgResIdl {
+    message MsgInfo {
+        int64 msgId = 1;
+        // 收件人 uid（1v1 私信里区分归属会话；字段位推断，联调验证点）
+        int64 toUid = 2;
+        int32 msgType = 3;
+        string content = 5;
+        int32 createTime = 8;
+        ImUserInfo userInfo = 10;
+    }
+    message GroupMsg {
+        message GroupInfo {
+            int64 groupId = 1;
+            int32 groupType = 20;
+        }
+        GroupInfo groupInfo = 1;
+        repeated MsgInfo msgList = 2;
+    }
+    ImError error = 1;
+    message DataRes {
+        repeated GroupMsg groupInfo = 1;
+    }
+    DataRes data = 2;
+}

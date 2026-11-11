@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package tieba.im;
+
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.im";
+
+// CMD 202006：服务端主动推送（仅下行）。收到后按 groupId + msgId 增量拉取（CMD 202003）。
+message PushNotifyResIdl {
+    message PusherMsgInfo {
+        int64 groupId = 1;
+        int64 msgId = 2;
+        int32 type = 4;
+        string et = 6;
+        int32 groupType = 7;
+    }
+    message PusherMsg {
+        PusherMsgInfo data = 2;
+    }
+    repeated PusherMsg multiMsg = 2;
+}

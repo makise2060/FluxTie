@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package tieba.im;
+
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.im";
+
+import "im/ImCommon.proto";
+
+// CMD 205006：标记私信已读（groupId 恒为 priv 组，toUid 为对端）。
+message CommitReceivedPmsgReqIdl {
+    message DataReq {
+        int64 groupId = 1;
+        int64 toUid = 2;
+        int32 msgType = 3;
+        int64 msgId = 4;
+    }
+    DataReq data = 1;
+}
+
+message CommitReceivedPmsgResIdl {
+    ImError error = 1;
+}

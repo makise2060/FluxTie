@@ -82,6 +82,16 @@
     <string name="title_default">FluxTie</string>
     <string name="title_my_collect">我的收藏</string>
     <string name="title_at_me">提到我的</string>
+    <string name="title_chat">私信</string>
+    <string name="menu_send_chat">发送私信</string>
+    <string name="chat_input_hint">输入私信内容…</string>
+    <string name="chat_btn_send_desc">发送</string>
+    <string name="chat_empty_title">暂无私信</string>
+    <string name="chat_empty_subtitle">新消息将实时送达</string>
+    <string name="chat_history_empty_title">还没有对话</string>
+    <string name="chat_history_empty_subtitle">发条私信打个招呼吧</string>
+    <string name="toast_chat_send_failed">私信发送失败：%1$s</string>
+    <string name="toast_chat_not_ready">私信服务连接中，请稍候…</string>
     <string name="text_message_list_item_reply_my_thread">回复我的主题：%1$s</string>
     <string name="title_reply_me">回复我的</string>
     <string name="title_send_to_desktop">发送到桌面</string>

@@ -79,11 +79,14 @@ private val MIGRATION_38_39 = Migration(38, 39) { db ->
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
+    /** 供迁移测试使用：迁移路径与线上构建必须完全一致 */
+    val ALL_MIGRATIONS = arrayOf(MIGRATION_38_39, MIGRATION_39_40, MIGRATION_40_41, MIGRATION_41_42)
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "tblite.db")
-            .addMigrations(MIGRATION_38_39, MIGRATION_39_40, MIGRATION_40_41, MIGRATION_41_42)
+            .addMigrations(*ALL_MIGRATIONS)
             .build()
     }
 

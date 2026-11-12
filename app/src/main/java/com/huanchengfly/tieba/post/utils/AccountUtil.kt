@@ -22,7 +22,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -57,6 +60,19 @@ object AccountUtil {
 
     private var mutableAllAccountsState: MutableState<List<Account>> = mutableStateOf(emptyList())
 
+    /**
+     * 账号数据是否已完成首轮加载。
+     *
+     * 登录态冷启动改为后台读 Room（消除主线程 runBlocking 阻塞），
+     * 依赖账号的启动就绪信号（启动屏退场）必须等此值为 true，避免闪现「未登录」。
+     */
+    val accountsLoaded = MutableStateFlow(false)
+
+    /** 供非 Compose 场景挂起等待账号首轮加载完成 */
+    suspend fun awaitAccountsLoaded() {
+        accountsLoaded.first { it }
+    }
+
     val currentAccount
         get() = mutableCurrentAccountState.value
 
@@ -68,18 +84,23 @@ object AccountUtil {
             context.getSharedPreferences("accountData", Context.MODE_PRIVATE).getInt("now", -1)
         }.getOrDefault(-1)
         if (loginUser == -1) {
-            // 未登录冷启动：不在主线程阻塞等 Room，账号列表后台补齐（切换账号菜单仅登录态可达）
+            // 未登录冷启动：账号列表后台补齐（切换账号菜单仅登录态可达）
             mutableCurrentAccountState.value = null
             CoroutineScope(Dispatchers.IO).launch {
                 mutableAllAccountsState.value = DatabaseUtil.getAllAccounts()
+                accountsLoaded.value = true
             }
             return
         }
-        val account = runCatching {
-            getAccountInfo(loginUser)
-        }.getOrNull()
-        mutableCurrentAccountState.value = account
-        mutableAllAccountsState.value = runBlocking(Dispatchers.IO) { DatabaseUtil.getAllAccounts() }
+        // 登录态冷启动：主线程不再阻塞等 Room，读账号与账号列表都在 IO 完成，
+        // UI 侧依赖账号的就绪信号需等待 accountsLoaded
+        CoroutineScope(Dispatchers.IO).launch {
+            val account = runCatching { DatabaseUtil.getAccountById(loginUser) }.getOrNull()
+            val all = DatabaseUtil.getAllAccounts()
+            mutableCurrentAccountState.value = account
+            mutableAllAccountsState.value = all
+            accountsLoaded.value = true
+        }
     }
 
     @JvmStatic

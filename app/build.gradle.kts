@@ -79,6 +79,11 @@ android {
         baseline = file("lint-baseline.xml")
     }
 
+    sourceSets {
+        // Room 迁移测试需要读取导出的 schema JSON
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -256,6 +261,7 @@ dependencies {
 
     //Test
     testImplementation(libs.junit.junit)
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.rules)

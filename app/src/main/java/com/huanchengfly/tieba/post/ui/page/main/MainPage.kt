@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -91,6 +92,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 
 /** 底栏「消息」tab 的 id：外部入口（通知、快捷方式）按 id 定位，避免 hideExplore 造成的索引漂移。 */
@@ -181,9 +183,11 @@ fun MainPage(
     val onChangePosition: (Int) -> Unit = { currentPosition = it }
 
     // 启动屏就绪兜底：起始页非首页时（动态/消息/我的），
-    // HomePage 不会组合、无法触发 markReady，此处补位避免启动屏只能等超时退场
-    LaunchedEffect(Unit) {
-        if (currentPosition != 0) {
+    // HomePage 不会组合、无法触发 markReady，此处补位避免启动屏只能等超时退场；
+    // 账号首轮加载（登录态冷启动改为后台读库）完成前不得退场，避免闪现未登录态
+    val accountsLoaded by AccountUtil.accountsLoaded.collectAsState()
+    LaunchedEffect(currentPosition != 0, accountsLoaded) {
+        if (currentPosition != 0 && accountsLoaded) {
             SplashState.markReady()
         }
     }

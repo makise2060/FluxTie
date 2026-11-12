@@ -45,6 +45,7 @@ import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,6 +105,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.debounceClickable
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.rememberMenuState
 import com.huanchengfly.tieba.post.ui.widgets.compose.states.StateScreen
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.ImageUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
@@ -398,6 +400,9 @@ fun HomePage(
         initial = false
     )
     val isLoggedIn = remember(account) { account != null }
+    // 登录态冷启动时账号改为后台加载：未登录就绪信号必须等账号首轮加载完成，
+    // 否则首帧误判未登录会让启动屏提前退场、闪现「你还未登录」
+    val accountsLoaded by AccountUtil.accountsLoaded.collectAsState()
     val isEmpty by remember { derivedStateOf { forums.isEmpty() } }
     val showEmptyState by remember {
         derivedStateOf { isEmpty && (!isLoggedIn || hasLoaded) }
@@ -408,10 +413,10 @@ fun HomePage(
     val isError by remember { derivedStateOf { error != null } }
     val gridCells by remember { derivedStateOf { getGridCells(context, listSingle) } }
 
-    LaunchedEffect(isLoading, hasLoaded) {
+    LaunchedEffect(isLoading, hasLoaded, isLoggedIn, accountsLoaded) {
         // 登录用户等首屏数据真正就绪再让启动屏退场(冷启动 isLoading 初始为 false,勿按首帧误判);
-        // 未登录无加载流程,直接就绪
-        if (!isLoading && (hasLoaded || !isLoggedIn)) {
+        // 未登录无加载流程,账号首轮加载完成后才就绪
+        if (!isLoading && (hasLoaded || (!isLoggedIn && accountsLoaded))) {
             com.huanchengfly.tieba.post.ui.widgets.compose.SplashState.markReady()
         }
     }

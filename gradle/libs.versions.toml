@@ -186,6 +186,7 @@ google-gson = { group = "com.google.code.gson", name = "gson", version = "2.14.0
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 # ColorPicker
 com-jaredrummler-colorpicker = { group = "com.jaredrummler", name = "colorpicker", version = "1.1.0" }

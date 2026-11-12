@@ -19,6 +19,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = ApplicationProvider.getApplicationContext();
 
-        assertEquals("com.huanchengfly.tieba.post", appContext.getPackageName());
+        assertEquals("com.makise.fluxtie", appContext.getPackageName());
     }
 }

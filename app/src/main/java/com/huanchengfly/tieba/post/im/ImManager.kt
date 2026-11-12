@@ -76,9 +76,19 @@ object ImManager {
 
     private var networkEventJob: Job? = null
 
+    private var accountsLoadedJob: Job? = null
+
     /** App 启动钩子：有登录态则启动（幂等），并跟随切号/退出重启或停止连接 */
     fun onAppStart() {
         AccountUtil.getLoginInfo()?.let { start(it) }
+        // 登录态冷启动的账号改为后台加载：加载完成后再启动一次（start 对同账号幂等）
+        if (accountsLoadedJob?.isActive != true) {
+            accountsLoadedJob = scope.launch {
+                AccountUtil.accountsLoaded.collect { loaded ->
+                    if (loaded) AccountUtil.getLoginInfo()?.let { start(it) }
+                }
+            }
+        }
         if (networkEventJob?.isActive != true) {
             networkEventJob = scope.launch {
                 var wasOnline = networkStatus.online.value

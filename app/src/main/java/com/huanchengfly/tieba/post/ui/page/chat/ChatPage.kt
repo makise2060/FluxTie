@@ -56,13 +56,18 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
 import com.huanchengfly.tieba.post.ui.widgets.compose.MyScaffold
 import com.huanchengfly.tieba.post.ui.widgets.compose.TitleCentredToolbar
 import com.huanchengfly.tieba.post.utils.StringUtil.getAvatarUrl
+import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 /**
  * 1v1 私信聊天页（一期：文本收发）。
  */
-@Destination
+@Destination(
+    deepLinks = [
+        DeepLink(uriPattern = "tblite://chat/{peerUid}")
+    ]
+)
 @Composable
 fun ChatPage(
     navigator: DestinationsNavigator,
@@ -88,11 +93,15 @@ fun ChatPage(
     LaunchedEffect(chatViewModel) {
         chatViewModel.uiEventFlow.collect { event ->
             when (event) {
-                is ChatUiEvent.SendFailed -> Toast.makeText(
-                    context,
-                    context.getString(R.string.toast_chat_send_failed, event.message),
-                    Toast.LENGTH_SHORT,
-                ).show()
+                is ChatUiEvent.SendFailed -> {
+                    // 发送失败把原文退回输入框，避免重打
+                    if (input.isEmpty()) input = event.content
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.toast_chat_send_failed, event.message),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
             }
         }
     }
@@ -118,18 +127,19 @@ fun ChatPage(
                         navigator.navigateUp()
                     }
                 },
-            ) {
-                if (displayPortrait.isNotEmpty()) {
-                    AsyncImage(
-                        imageUri = getAvatarUrl(displayPortrait),
-                        contentDescription = displayName,
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .size(32.dp)
-                            .clip(CircleShape),
-                    )
-                }
-            }
+                actions = {
+                    if (displayPortrait.isNotEmpty()) {
+                        AsyncImage(
+                            imageUri = getAvatarUrl(displayPortrait),
+                            contentDescription = displayName,
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .size(32.dp)
+                                .clip(CircleShape),
+                        )
+                    }
+                },
+            )
         },
     ) { paddingValues ->
         Column(

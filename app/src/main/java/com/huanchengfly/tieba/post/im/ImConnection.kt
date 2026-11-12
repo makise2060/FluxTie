@@ -77,6 +77,15 @@ class ImConnection(
 
     private var dispatcherJob: kotlinx.coroutines.Job? = null
 
+    /** 每次连接创建一个「会话结束」信号：断开时完成，供上层保活循环感知（SharedFlow 不会自行结束） */
+    @Volatile
+    private var sessionEnd = CompletableDeferred<Unit>()
+
+    /** 挂起直到当前连接断开 */
+    suspend fun awaitSessionEnd() {
+        sessionEnd.await()
+    }
+
     /** 新密钥对（重连换新，避免旧密钥残留） */
     fun newSessionKey(): ByteArray {
         val key = ImCrypto.generateSecKey()
@@ -85,10 +94,13 @@ class ImConnection(
         return key
     }
 
-    /** 建立连接并启动分发循环；已连接时直接返回 */
+    /** 建立连接并启动分发循环；已连接/正在连接时直接返回 */
     suspend fun connect(): Unit = withContext(Dispatchers.IO) {
-        if (_state.value == ImConnectionState.Connected) return@withContext
+        if (_state.value == ImConnectionState.Connected || _state.value == ImConnectionState.Connecting) {
+            return@withContext
+        }
         _state.value = ImConnectionState.Connecting
+        sessionEnd = CompletableDeferred()
         val request = Request.Builder()
             .url(ImConstants.WS_URL)
             .header("Sec-WebSocket-Extensions", ImConstants.HEADER_IM_VERSION)
@@ -108,16 +120,19 @@ class ImConnection(
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    onDisconnected(RuntimeException("连接关闭：$code $reason"))
+                    val error = RuntimeException("连接关闭：$code $reason")
+                    deferred.completeExceptionally(error)
+                    onDisconnected(error)
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    deferred.completeExceptionally(t)
                     onDisconnected(t)
                 }
             },
         )
-        // 握手失败时 onFailed 已触发，这里等 onOpen
-        deferred.await()
+        // 握手失败会由 onFailure 完成 exceptionally，不会无限等待
+        withTimeout(ImConstants.CONNECT_TIMEOUT_MS) { deferred.await() }
         _state.value = ImConnectionState.Connected
         if (dispatcherJob?.isActive != true) {
             dispatcherJob = externalScope.launch { dispatchLoop() }
@@ -125,7 +140,10 @@ class ImConnection(
     }
 
     private fun onDisconnected(t: Throwable) {
+        // 只处理当前连接：close() 主动断开后旧 listener 的迟到回调不应覆盖新状态
+        if (_state.value == ImConnectionState.Idle) return
         _state.value = ImConnectionState.Failed(t)
+        sessionEnd.complete(Unit)
         // 唤醒所有等待者
         waiters.values.forEach { it.completeExceptionally(t) }
         waiters.clear()
@@ -140,6 +158,8 @@ class ImConnection(
                 } else {
                     waiters.remove(frame.reqId)?.complete(frame.payload)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // 单帧解析失败只影响该帧，不断连接
                 android.util.Log.w("ImConnection", "帧处理失败", e)
@@ -176,9 +196,11 @@ class ImConnection(
     }
 
     fun close() {
+        // 先置 Idle：主动断开后旧 listener 的迟到回调不再改写状态
+        _state.value = ImConnectionState.Idle
         webSocket?.close(1000, null)
         webSocket = null
-        _state.value = ImConnectionState.Idle
+        sessionEnd.complete(Unit)
         waiters.values.forEach { it.completeExceptionally(RuntimeException("连接已关闭")) }
         waiters.clear()
         dispatcherJob?.cancel()

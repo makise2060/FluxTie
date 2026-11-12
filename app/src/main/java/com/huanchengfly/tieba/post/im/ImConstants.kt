@@ -60,6 +60,9 @@ object ImConstants {
     /** 响应等待超时（毫秒），仿 aiotieba ws_read=8s */
     const val READ_TIMEOUT_MS = 8_000L
 
+    /** WebSocket 握手超时（毫秒） */
+    const val CONNECT_TIMEOUT_MS = 15_000L
+
     /** OkHttp 层心跳间隔（秒），仿 aiotieba ws_heartbeat=180s */
     const val PING_INTERVAL_SECONDS = 180L
 

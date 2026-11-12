@@ -49,14 +49,15 @@ sealed interface ChatPartialChange : PartialChange<ChatUiState> {
         override fun reduce(oldState: ChatUiState): ChatUiState = oldState.copy(sending = sending)
     }
 
-    data class SendFailed(val error: Exception) : ChatPartialChange {
+    data class SendFailed(val content: String, val error: Exception) : ChatPartialChange {
         override fun reduce(oldState: ChatUiState): ChatUiState =
             oldState.copy(sending = false)
     }
 }
 
 sealed interface ChatUiEvent : UiEvent {
-    data class SendFailed(val message: String) : ChatUiEvent
+    /** 发送失败：带回原文，便于输入框恢复草稿 */
+    data class SendFailed(val content: String, val message: String) : ChatUiEvent
 }
 
 @Immutable
@@ -79,7 +80,8 @@ class ChatViewModel @Inject constructor() :
     override fun dispatchEvent(partialChange: ChatPartialChange): UiEvent? =
         when (partialChange) {
             is ChatPartialChange.SendFailed -> ChatUiEvent.SendFailed(
-                partialChange.error.message ?: partialChange.error.toString()
+                content = partialChange.content,
+                message = partialChange.error.message ?: partialChange.error.toString(),
             )
 
             else -> null
@@ -98,17 +100,24 @@ private object ChatPartialChangeProducer :
         )
 
     /**
-     * Load：订阅 Room 消息流（实时刷新），进入时增量拉取一次并标记已读。
+     * Load：进入会话先同步一次增量，随后由 Room 消息流驱动 UI。
+     * 不把拉取放进 collect：否则每次落库都触发一次网络请求（含重复消息的无效往返）。
      */
     private fun produceLoadPartialChange(peerUid: Long): Flow<ChatPartialChange> = flow {
         val uid = AccountUtil.getLoginInfo()?.uid.orEmpty()
         DatabaseUtil.getImSessionFlow(uid).first().firstOrNull { it.peerUid == peerUid }?.let {
             emit(ChatPartialChange.SessionLoaded(it))
         }
+        runCatching { ImManager.pullMessages() }
+        var lastMarkedMsgId = 0L
         DatabaseUtil.getImMessageFlow(uid, peerUid).collect { messages ->
             emit(ChatPartialChange.MessagesLoaded(messages))
-            runCatching { ImManager.pullMessages() }
-            messages.lastOrNull()?.let { last -> ImManager.markRead(peerUid, last.msgId) }
+            // 只对「对端发来的最新一条」推进已读，且同一条不重复上报
+            val lastIncoming = messages.lastOrNull { !it.isMine }
+            if (lastIncoming != null && lastIncoming.msgId > lastMarkedMsgId) {
+                lastMarkedMsgId = lastIncoming.msgId
+                ImManager.markRead(peerUid, lastIncoming.msgId)
+            }
         }
     }
 
@@ -120,7 +129,7 @@ private object ChatPartialChangeProducer :
             }
             ImManager.sendMessage(peerUid, content)
         } catch (e: Exception) {
-            emit(ChatPartialChange.SendFailed(e))
+            emit(ChatPartialChange.SendFailed(content, e))
         } finally {
             emit(ChatPartialChange.Sending(false))
         }

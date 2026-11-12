@@ -1,21 +1,26 @@
 package com.huanchengfly.tieba.post.im
 
 import android.util.Log
+import com.huanchengfly.tieba.post.arch.GlobalEvent
+import com.huanchengfly.tieba.post.arch.GlobalEventFlow
 import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.ImMessage
 import com.huanchengfly.tieba.post.models.database.ImSession
 import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.CuidUtils
 import com.huanchengfly.tieba.post.utils.DatabaseUtil
+import com.huanchengfly.tieba.post.utils.UIDUtil
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -63,15 +68,29 @@ object ImManager {
 
     private var monitorJob: Job? = null
 
-    /** App 启动钩子：有登录态则启动（幂等） */
+    private var accountEventJob: Job? = null
+
+    /** App 启动钩子：有登录态则启动（幂等），并跟随切号/退出重启或停止连接 */
     fun onAppStart() {
-        val account = AccountUtil.getLoginInfo() ?: return
-        start(account)
+        AccountUtil.getLoginInfo()?.let { start(it) }
+        if (accountEventJob?.isActive != true) {
+            accountEventJob = scope.launch {
+                GlobalEventFlow.filterIsInstance<GlobalEvent.AccountSwitched>().collect {
+                    val account = AccountUtil.getLoginInfo()
+                    if (account != null) start(account) else stop()
+                }
+            }
+        }
     }
 
     /** 登录/切号后调用；同账号重复调用幂等 */
     fun start(account: Account) {
         if (accountUid == account.uid && monitorJob?.isActive == true) return
+        if (account.sToken.isEmpty()) {
+            Log.w(TAG, "账号缺少 STOKEN，私信长连接不可用")
+            _imStatus.value = ImStatus.Error(IllegalStateException("账号缺少 STOKEN"))
+            return
+        }
         stop()
         accountUid = account.uid
         myUid = account.uid.toLongOrNull() ?: 0L
@@ -99,8 +118,13 @@ object ImManager {
                 auth(account)
                 _imStatus.value = ImStatus.Ready
                 backoff = ImConstants.RECONNECT_BASE_DELAY_MS
-                // 挂在推送流上；断流（连接失败由重连循环处理）时退出 collect 继续重连
-                connection.pushFlow.collect { frame -> onPush(frame) }
+                // 推送与「会话结束」并行等待：SharedFlow 不会自行结束，断线必须靠 sessionEnd 感知
+                coroutineScope {
+                    launch { connection.pushFlow.collect { frame -> onPush(frame) } }
+                    connection.awaitSessionEnd()
+                }
+                Log.i(TAG, "IM 连接已断开，准备重连")
+                _imStatus.value = ImStatus.Error(IllegalStateException("IM 连接已断开"))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -121,7 +145,8 @@ object ImManager {
             ImApi.buildUpdateClientInfo(
                 bduss = account.bduss,
                 stoken = account.sToken,
-                cuid = CuidUtils.getNewCuid(),
+                // IM 的 cuid 用官方形态 baidutiebaapp{uuid}；session/device 里再带 cuid_galaxy2
+                cuid = UIDUtil.newCUID,
                 cuidGalaxy2 = CuidUtils.getNewCuid(),
                 secKey = secKey,
             ),
@@ -156,13 +181,14 @@ object ImManager {
     suspend fun pullMessages(groupIds: List<Long> = listOfNotNull(privGid.takeIf { it > 0L })) {
         if (accountUid.isEmpty() || groupIds.isEmpty()) return
         val pairs = groupIds.map { it to (gid2LastMsgId[it] ?: 0L) }
-        val body = connection.request(ImConstants.CMD_GET_GROUP_MSG, ImApi.buildGetGroupMsg(CuidUtils.getNewCuid(), pairs))
+        val body = connection.request(ImConstants.CMD_GET_GROUP_MSG, ImApi.buildGetGroupMsg(UIDUtil.newCUID, pairs))
         persistPull(ImApi.parseGetGroupMsg(body))
     }
 
     private suspend fun persistPull(results: List<ImPullResult>) {
         for (result in results) {
-            val gid = result.groupId
+            // 服务端未回组信息时按 1v1 私信默认组归属，避免落到 gid=0
+            val gid = result.groupId.takeIf { it > 0L } ?: privGid
             var maxMsgId = gid2LastMsgId[gid] ?: 0L
             for (msg in result.messages) {
                 maxMsgId = maxOf(maxMsgId, msg.msgId)
@@ -186,7 +212,8 @@ object ImManager {
                             Log.w(TAG, "消息缺少归属会话（toUid 推断失败），msgId=${msg.msgId}")
                             continue
                         }
-                        DatabaseUtil.insertImMessages(
+                        // 重复投递（IGNORE 命中）不算新消息，避免未读重复累加
+                        val inserted = DatabaseUtil.insertImMessages(
                             listOf(
                                 ImMessage(
                                     uid = accountUid,
@@ -201,6 +228,7 @@ object ImManager {
                                 )
                             )
                         )
+                        val isNew = inserted.any { it != -1L }
                         DatabaseUtil.getImSession(accountUid, peerUid)?.let { session ->
                             DatabaseUtil.upsertImSession(
                                 session.copy(
@@ -210,7 +238,7 @@ object ImManager {
                                     lastMsgTime = maxOf(session.lastMsgTime, msg.createTime),
                                     lastMsgPreview = msg.content,
                                     lastMsgFromMe = isMine,
-                                    unreadCount = if (isMine) session.unreadCount else session.unreadCount + 1,
+                                    unreadCount = if (isMine || !isNew) session.unreadCount else session.unreadCount + 1,
                                 )
                             )
                         } ?: DatabaseUtil.upsertImSession(
@@ -223,7 +251,7 @@ object ImManager {
                                 lastMsgTime = msg.createTime,
                                 lastMsgPreview = msg.content,
                                 lastMsgFromMe = isMine,
-                                unreadCount = if (isMine) 0 else 1,
+                                unreadCount = if (isMine || !isNew) 0 else 1,
                             )
                         )
                     }
@@ -250,9 +278,12 @@ object ImManager {
         )
         val msgId = ImApi.parseCommitPersonalMsg(body)
         val createTime = System.currentTimeMillis() / 1000
-        if (msgId > 0L) {
-            gid2LastMsgId[privGid] = maxOf(gid2LastMsgId[privGid] ?: 0L, msgId)
+        if (msgId <= 0L) {
+            // 服务端未回消息 id：不写本地（避免 msgId=0 撞唯一索引或留下幽灵气泡），下次拉取会带回
+            Log.w(TAG, "发送成功但未返回 msgId，跳过本地落库")
+            return msgId
         }
+        gid2LastMsgId[privGid] = maxOf(gid2LastMsgId[privGid] ?: 0L, msgId)
         // 本地落库（乐观）：响应成功即视为已发出
         DatabaseUtil.insertImMessages(
             listOf(

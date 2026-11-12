@@ -16,7 +16,7 @@ interface ImMessageDao {
     suspend fun getLatestByPeer(uid: String, peerUid: Long): ImMessage?
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertAll(messages: List<ImMessage>)
+    suspend fun insertAll(messages: List<ImMessage>): List<Long>
 
     @Query("DELETE FROM im_message WHERE uid = :uid")
     suspend fun deleteByUid(uid: String)

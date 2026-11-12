@@ -146,7 +146,7 @@ object DatabaseUtil {
     suspend fun clearImUnread(uid: String, peerUid: Long) =
         appDatabase.imSessionDao().clearUnread(uid, peerUid)
 
-    suspend fun insertImMessages(messages: List<ImMessage>) =
+    suspend fun insertImMessages(messages: List<ImMessage>): List<Long> =
         appDatabase.imMessageDao().insertAll(messages)
 
     suspend fun getLatestImMessage(uid: String, peerUid: Long): ImMessage? =

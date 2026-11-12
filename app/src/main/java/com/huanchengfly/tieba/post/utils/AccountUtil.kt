@@ -238,6 +238,9 @@ object AccountUtil {
         }
         mutableCurrentAccountState.value = null
         context.getSharedPreferences("accountData", Context.MODE_PRIVATE).edit().clear().commit()
+        GlobalScope.launch {
+            emitGlobalEvent(GlobalEvent.AccountSwitched)
+        }
         Toast.makeText(context, R.string.toast_exit_account_success, Toast.LENGTH_SHORT).show()
     }
 

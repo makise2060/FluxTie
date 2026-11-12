@@ -64,10 +64,12 @@ object ImFrame {
     }
 
     private fun readInt(source: ByteArray, offset: Int): Int =
-        (source[offset].toInt() and 0xFF) shl 24 or
-            (source[offset + 1].toInt() and 0xFF) shl 16 or
-            (source[offset + 2].toInt() and 0xFF) shl 8 or
-            (source[offset + 3].toInt() and 0xFF)
+        // 注意：Kotlin 的 infix（shl/or）同优先级且左结合，必须显式加括号，
+        // 否则 `a shl 24 or b shl 16` 会被解析成 `((a shl 24) or b) shl 16`。
+        (((source[offset].toInt() and 0xFF) shl 24) or
+            ((source[offset + 1].toInt() and 0xFF) shl 16) or
+            ((source[offset + 2].toInt() and 0xFF) shl 8) or
+            (source[offset + 3].toInt() and 0xFF))
 
     private fun gzip(data: ByteArray): ByteArray = ByteArrayOutputStream().use { bos ->
         GZIPOutputStream(bos).use { it.write(data) }

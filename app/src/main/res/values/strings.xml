@@ -88,6 +88,10 @@
     <string name="chat_btn_send_desc">发送</string>
     <string name="chat_empty_title">暂无私信</string>
     <string name="chat_empty_subtitle">新消息将实时送达</string>
+    <string name="chat_empty_login_subtitle">登录后查看和管理私信</string>
+    <string name="notifications_empty_title">暂无新消息</string>
+    <string name="notifications_empty_subtitle">有人回复或提到你时会出现在这里</string>
+    <string name="notifications_empty_login_subtitle">登录后查看回复我的与提到我的消息</string>
     <string name="chat_history_empty_title">还没有对话</string>
     <string name="chat_history_empty_subtitle">发条私信打个招呼吧</string>
     <string name="toast_chat_send_failed">私信发送失败：%1$s</string>

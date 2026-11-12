@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
@@ -13,11 +14,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import android.app.NotificationManager
 import android.content.Context
+import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +39,7 @@ import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.common.theme.compose.pullRefreshIndicator
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.main.LocalMainBottomInsets
+import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.SubPostsPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.ThreadPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.UserProfilePageDestination
@@ -42,6 +48,8 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.PullRefreshLogoIndicator
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockTip
 import com.huanchengfly.tieba.post.ui.widgets.compose.BlockableContent
 import com.huanchengfly.tieba.post.ui.widgets.compose.Container
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyIllustration
+import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyState
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmoticonText
 import com.huanchengfly.tieba.post.ui.widgets.compose.LazyLoad
 import com.huanchengfly.tieba.post.ui.widgets.compose.LoadMoreLayout
@@ -49,6 +57,7 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.MyLazyColumn
 import com.huanchengfly.tieba.post.ui.widgets.compose.Sizes
 import com.huanchengfly.tieba.post.ui.widgets.compose.UserHeader
 import com.huanchengfly.tieba.post.ui.widgets.compose.debounceClickable
+import com.huanchengfly.tieba.post.utils.AccountUtil.LocalAccount
 import com.huanchengfly.tieba.post.utils.DateTimeUtils
 import com.huanchengfly.tieba.post.utils.StringUtil
 import kotlinx.collections.immutable.persistentListOf
@@ -62,9 +71,21 @@ fun NotificationsListPage(
         NotificationsType.AtMe -> pageViewModel<NotificationsListUiIntent, AtMeListViewModel>()
     }
 ) {
+    val account = LocalAccount.current
+    val loggedIn = account != null
+    // 未登录时首个 Refresh 跳过，避免刷出「请登录」错误；登录后由 LaunchedEffect 补一次
+    var wasLoggedIn by remember { mutableStateOf(loggedIn) }
     LazyLoad(loaded = viewModel.initialized) {
-        viewModel.send(NotificationsListUiIntent.Refresh)
+        if (wasLoggedIn) {
+            viewModel.send(NotificationsListUiIntent.Refresh)
+        }
         viewModel.initialized = true
+    }
+    LaunchedEffect(loggedIn) {
+        if (loggedIn && !wasLoggedIn) {
+            viewModel.send(NotificationsListUiIntent.Refresh)
+        }
+        wasLoggedIn = loggedIn
     }
     val context = LocalContext.current
     // 进入消息页即视为已读：清掉消息轮询挂上的系统通知（只清消息两类，不波及更新进度等）
@@ -103,7 +124,30 @@ fun NotificationsListPage(
     Box(
         modifier = Modifier.pullRefresh(pullRefreshState)
     ) {
-        LoadMoreLayout(
+        when {
+            !loggedIn -> EmptyState(
+                title = stringResource(id = R.string.title_empty_login),
+                subtitle = stringResource(id = R.string.notifications_empty_login_subtitle),
+                illustration = EmptyIllustration.Astronaut,
+                modifier = Modifier.fillMaxSize(),
+                actions = {
+                    Button(
+                        onClick = { navigator.navigate(LoginPageDestination) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(text = stringResource(id = R.string.button_login))
+                    }
+                },
+            )
+
+            data.isEmpty() && !isRefreshing -> EmptyState(
+                title = stringResource(id = R.string.notifications_empty_title),
+                subtitle = stringResource(id = R.string.notifications_empty_subtitle),
+                illustration = EmptyIllustration.Box,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            else -> LoadMoreLayout(
             isLoading = isLoadingMore,
             onLoadMore = { viewModel.send(NotificationsListUiIntent.LoadMore(currentPage + 1)) },
             loadEnd = !hasMore,
@@ -243,13 +287,16 @@ fun NotificationsListPage(
                 }
             }
         }
+        }
 
-        PullRefreshLogoIndicator(
-            refreshing = isRefreshing,
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
-            contentColor = ExtendedTheme.colors.onPrimary,
-        )
+        if (loggedIn && data.isNotEmpty()) {
+            PullRefreshLogoIndicator(
+                refreshing = isRefreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                backgroundColor = ExtendedTheme.colors.pullRefreshIndicator,
+                contentColor = ExtendedTheme.colors.onPrimary,
+            )
+        }
     }
 }

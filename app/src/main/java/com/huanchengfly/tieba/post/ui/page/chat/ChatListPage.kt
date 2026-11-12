@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,8 +39,10 @@ import com.huanchengfly.tieba.post.models.database.ImSession
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.destinations.ChatPageDestination
+import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyIllustration
 import com.huanchengfly.tieba.post.ui.widgets.compose.EmptyState
+import com.huanchengfly.tieba.post.utils.AccountUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getAvatarUrl
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -51,17 +54,35 @@ import java.util.Locale
 @Composable
 fun ChatListPage(chatListViewModel: ChatListViewModel = viewModel()) {
     val navigator = LocalNavigator.current
+    val loggedIn = AccountUtil.isLoggedIn()
     LaunchedEffect(chatListViewModel) {
         chatListViewModel.send(ChatListUiIntent.Refresh)
     }
     val uiState by chatListViewModel.uiState.collectAsState()
 
     if (uiState.sessions.isEmpty()) {
-        EmptyState(
-            title = stringResource(id = R.string.chat_empty_title),
-            subtitle = stringResource(id = R.string.chat_empty_subtitle),
-            illustration = EmptyIllustration.Hide,
-        )
+        if (!loggedIn) {
+            EmptyState(
+                title = stringResource(id = R.string.title_empty_login),
+                subtitle = stringResource(id = R.string.chat_empty_login_subtitle),
+                illustration = EmptyIllustration.Astronaut,
+                actions = {
+                    Button(
+                        onClick = { navigator.navigate(LoginPageDestination) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(text = stringResource(id = R.string.button_login))
+                    }
+                },
+            )
+        } else {
+            EmptyState(
+                title = stringResource(id = R.string.chat_empty_title),
+                subtitle = stringResource(id = R.string.chat_empty_subtitle),
+                // Hide 插画为斜置构图，空会话用正置的空纸箱
+                illustration = EmptyIllustration.Box,
+            )
+        }
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

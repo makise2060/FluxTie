@@ -63,7 +63,9 @@ fun ChatListPage(chatListViewModel: ChatListViewModel = viewModel()) {
     if (uiState.sessions.isEmpty()) {
         // 外层 Box 负责居中：EmptyState 内容块宽 0.9 屏宽，直接放进 pager 页会贴左
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 160.dp),
             contentAlignment = Alignment.Center,
         ) {
             EmptyState(

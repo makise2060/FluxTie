@@ -127,7 +127,9 @@ fun NotificationsListPage(
         when {
             // 空态统一用外层 Box 居中：EmptyState 内容块宽 0.9 屏宽，直接放会贴左
             !loggedIn -> Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 160.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 EmptyState(
@@ -147,7 +149,9 @@ fun NotificationsListPage(
             }
 
             data.isEmpty() && !isRefreshing -> Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 160.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 EmptyState(

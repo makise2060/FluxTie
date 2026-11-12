@@ -61,26 +61,30 @@ fun ChatListPage(chatListViewModel: ChatListViewModel = viewModel()) {
     val uiState by chatListViewModel.uiState.collectAsState()
 
     if (uiState.sessions.isEmpty()) {
-        if (!loggedIn) {
+        // 外层 Box 负责居中：EmptyState 内容块宽 0.9 屏宽，直接放进 pager 页会贴左
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
             EmptyState(
-                title = stringResource(id = R.string.title_empty_login),
-                subtitle = stringResource(id = R.string.chat_empty_login_subtitle),
-                illustration = EmptyIllustration.Astronaut,
+                title = stringResource(
+                    id = if (loggedIn) R.string.chat_empty_title else R.string.title_empty_login
+                ),
+                subtitle = stringResource(
+                    id = if (loggedIn) R.string.chat_empty_subtitle else R.string.chat_empty_login_subtitle
+                ),
+                illustration = EmptyIllustration.Hide,
+                modifier = Modifier.fillMaxWidth(),
                 actions = {
-                    Button(
-                        onClick = { navigator.navigate(LoginPageDestination) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(text = stringResource(id = R.string.button_login))
+                    if (!loggedIn) {
+                        Button(
+                            onClick = { navigator.navigate(LoginPageDestination) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(text = stringResource(id = R.string.button_login))
+                        }
                     }
                 },
-            )
-        } else {
-            EmptyState(
-                title = stringResource(id = R.string.chat_empty_title),
-                subtitle = stringResource(id = R.string.chat_empty_subtitle),
-                // Hide 插画为斜置构图，空会话用正置的空纸箱
-                illustration = EmptyIllustration.Box,
             )
         }
     } else {

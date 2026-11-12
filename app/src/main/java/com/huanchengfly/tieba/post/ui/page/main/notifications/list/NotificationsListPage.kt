@@ -125,27 +125,38 @@ fun NotificationsListPage(
         modifier = Modifier.pullRefresh(pullRefreshState)
     ) {
         when {
-            !loggedIn -> EmptyState(
-                title = stringResource(id = R.string.title_empty_login),
-                subtitle = stringResource(id = R.string.notifications_empty_login_subtitle),
-                illustration = EmptyIllustration.Astronaut,
+            // 空态统一用外层 Box 居中：EmptyState 内容块宽 0.9 屏宽，直接放会贴左
+            !loggedIn -> Box(
                 modifier = Modifier.fillMaxSize(),
-                actions = {
-                    Button(
-                        onClick = { navigator.navigate(LoginPageDestination) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(text = stringResource(id = R.string.button_login))
-                    }
-                },
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                EmptyState(
+                    title = stringResource(id = R.string.title_empty_login),
+                    subtitle = stringResource(id = R.string.notifications_empty_login_subtitle),
+                    illustration = EmptyIllustration.Hide,
+                    modifier = Modifier.fillMaxWidth(),
+                    actions = {
+                        Button(
+                            onClick = { navigator.navigate(LoginPageDestination) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(text = stringResource(id = R.string.button_login))
+                        }
+                    },
+                )
+            }
 
-            data.isEmpty() && !isRefreshing -> EmptyState(
-                title = stringResource(id = R.string.notifications_empty_title),
-                subtitle = stringResource(id = R.string.notifications_empty_subtitle),
-                illustration = EmptyIllustration.Box,
+            data.isEmpty() && !isRefreshing -> Box(
                 modifier = Modifier.fillMaxSize(),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                EmptyState(
+                    title = stringResource(id = R.string.notifications_empty_title),
+                    subtitle = stringResource(id = R.string.notifications_empty_subtitle),
+                    illustration = EmptyIllustration.Hide,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
 
             else -> LoadMoreLayout(
             isLoading = isLoadingMore,

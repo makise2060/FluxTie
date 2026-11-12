@@ -18,6 +18,7 @@ import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
 import com.huanchengfly.tieba.post.ui.page.ProvideNavigator
+import com.huanchengfly.tieba.post.ui.page.chat.ChatListPage
 import com.huanchengfly.tieba.post.ui.page.destinations.SearchPageDestination
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsListPage
 import com.huanchengfly.tieba.post.ui.page.main.notifications.list.NotificationsType
@@ -52,6 +53,9 @@ fun NotificationsPage(
         },
         stringResource(id = R.string.title_at_me) to @Composable {
             NotificationsListPage(type = NotificationsType.AtMe)
+        },
+        stringResource(id = R.string.title_chat) to @Composable {
+            ChatListPage()
         }
     )
     val pagerState = rememberPagerState(
@@ -124,6 +128,9 @@ fun NotificationsPage(
         },
         stringResource(id = R.string.title_at_me) to @Composable {
             NotificationsListPage(type = NotificationsType.AtMe)
+        },
+        stringResource(id = R.string.title_chat) to @Composable {
+            ChatListPage()
         }
     )
     val pagerState = rememberPagerState(

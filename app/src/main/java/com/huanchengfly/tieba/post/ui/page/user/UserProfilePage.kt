@@ -124,6 +124,7 @@ import com.huanchengfly.tieba.post.utils.StringUtil
 import com.huanchengfly.tieba.post.utils.StringUtil.getShortNumString
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.ui.page.LocalNavigator
+import com.huanchengfly.tieba.post.ui.page.destinations.ChatPageDestination
 import com.huanchengfly.tieba.post.ui.page.destinations.FollowListPageDestination
 import com.huanchengfly.tieba.post.ui.page.settings.components.SettingRow
 import com.ramcosta.composedestinations.annotation.Destination
@@ -382,6 +383,7 @@ private fun UserProfileToolbar(
 ) {
     val context = LocalContext.current
     val account = LocalAccount.current
+    val navigator = LocalNavigator.current
 
     Toolbar(
         title = {
@@ -433,6 +435,19 @@ private fun UserProfileToolbar(
                             Text(text = stringResource(id = R.string.menu_add_user_to_white_list))
                         }
                         if (account != null) {
+                            DropdownMenuItem(
+                                onClick = {
+                                    navigator.navigate(
+                                        ChatPageDestination(
+                                            peerUid = it.get { id },
+                                            peerName = it.get { name }.ifEmpty { it.get { nameShow } },
+                                            peerPortrait = it.get { portrait },
+                                        )
+                                    )
+                                }
+                            ) {
+                                Text(text = stringResource(id = R.string.menu_send_chat))
+                            }
                             DropdownMenuItem(
                                 onClick = onSetUserBlack
                             ) {

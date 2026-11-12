@@ -6,6 +6,8 @@ import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.models.database.Draft
 import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.models.database.ImMessage
+import com.huanchengfly.tieba.post.models.database.ImSession
 import com.huanchengfly.tieba.post.models.database.MemeEmoticon
 import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
@@ -24,8 +26,10 @@ import dagger.hilt.components.SingletonComponent
         SearchHistory::class,
         SearchPostHistory::class,
         MemeEmoticon::class,
+        ImSession::class,
+        ImMessage::class,
     ],
-    version = 41,
+    version = 42,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,6 +41,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun searchHistoryDao(): SearchHistoryDao
     abstract fun searchPostHistoryDao(): SearchPostHistoryDao
     abstract fun memeEmoticonDao(): MemeEmoticonDao
+    abstract fun imSessionDao(): ImSessionDao
+    abstract fun imMessageDao(): ImMessageDao
 }
 
 @EntryPoint

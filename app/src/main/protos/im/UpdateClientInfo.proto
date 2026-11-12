@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package tieba.im;
+
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.im";
+
+import "im/ImCommon.proto";
+
+// CMD 1001：上线鉴权（UpdateClientInfo）。首包明文发送（不加密不压缩），
+// 响应携带当前账号的全部消息组（1v1 私信为 groupType=6 的单个 priv 组）。
+message UpdateClientInfoReqIdl {
+    message DataReq {
+        string bduss = 1;
+        // JSON 字符串：cuid/_client_version/_msg_status/cuid_galaxy2/_client_type/timestamp
+        string device = 2;
+        // RSA(PKCS1v15) 加密的 31 字节随机密钥，服务端用它派生会话 AES 密钥
+        bytes secretKey = 3;
+        string stoken = 12;
+    }
+    DataReq data = 2;
+    string cuid = 1;
+}
+
+message UpdateClientInfoResIdl {
+    message GroupInfo {
+        int64 groupId = 1;
+        int32 groupType = 20;
+        int64 lastMsgId = 21;
+    }
+    ImError error = 1;
+    message DataRes {
+        repeated GroupInfo groupInfo = 1;
+    }
+    DataRes data = 2;
+}

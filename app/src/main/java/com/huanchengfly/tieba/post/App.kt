@@ -41,6 +41,7 @@ import com.github.panpf.sketch.request.internal.RequestContext
 import com.huanchengfly.tieba.post.components.ClipBoardLinkDetector
 import com.huanchengfly.tieba.post.components.OAIDGetter
 
+import com.huanchengfly.tieba.post.im.ImManager
 import com.huanchengfly.tieba.post.ui.common.theme.compose.dynamicTonalPalette
 import com.huanchengfly.tieba.post.ui.common.theme.interfaces.ThemeSwitcher
 import com.huanchengfly.tieba.post.ui.common.theme.utils.ThemeUtils
@@ -95,6 +96,8 @@ class App : Application(), SketchFactory {
             setWebViewPath(this)
         }
         AccountUtil.init(this)
+        // 登录态下启动 IM 私信长连接（内部自幂等，未登录不启动）
+        ImManager.onAppStart()
         migrateThemeDefaults()
         val isSelfBuild = applicationMetaData.getBoolean("is_self_build")
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)

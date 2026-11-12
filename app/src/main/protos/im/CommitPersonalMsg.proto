@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package tieba.im;
+
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.im";
+
+import "im/ImCommon.proto";
+
+// CMD 205001：发送 1v1 文本私信。recordId 取 priv 组 lastMsgId * 100 + 1。
+message CommitPersonalMsgReqIdl {
+    message DataReq {
+        int64 toUid = 2;
+        int32 msgType = 3;
+        string content = 4;
+        int64 recordId = 6;
+    }
+    DataReq data = 1;
+}
+
+message CommitPersonalMsgResIdl {
+    ImError error = 1;
+    message BlockInfo {
+        int32 blockErrno = 1;
+        string blockErrmsg = 2;
+    }
+    message DataRes {
+        int64 msgId = 1;
+        BlockInfo blockInfo = 6;
+    }
+    DataRes data = 2;
+}

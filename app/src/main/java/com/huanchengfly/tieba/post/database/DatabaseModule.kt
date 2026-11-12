@@ -16,6 +16,14 @@ private val MIGRATION_40_41 = Migration(40, 41) { db ->
     db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_meme_emoticon_uid_picId_pkgId_type` ON `meme_emoticon` (`uid`, `picId`, `pkgId`, `type`)")
 }
 
+private val MIGRATION_41_42 = Migration(41, 42) { db ->
+    // IM 私信：会话（按对端划分）+ 消息（1v1 私信共用 priv 组，按 (uid, peerUid, msgId) 去重）
+    db.execSQL("CREATE TABLE IF NOT EXISTS `im_session` (`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `uid` TEXT NOT NULL, `peerUid` INTEGER NOT NULL, `peerName` TEXT NOT NULL, `peerPortrait` TEXT NOT NULL, `lastMsgId` INTEGER NOT NULL, `lastMsgTime` INTEGER NOT NULL, `lastMsgPreview` TEXT NOT NULL, `lastMsgFromMe` INTEGER NOT NULL, `unreadCount` INTEGER NOT NULL, `peerReadMsgId` INTEGER NOT NULL)")
+    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_im_session_uid_peerUid` ON `im_session` (`uid`, `peerUid`)")
+    db.execSQL("CREATE TABLE IF NOT EXISTS `im_message` (`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `uid` TEXT NOT NULL, `peerUid` INTEGER NOT NULL, `groupId` INTEGER NOT NULL, `msgId` INTEGER NOT NULL, `msgType` INTEGER NOT NULL, `content` TEXT NOT NULL, `createTime` INTEGER NOT NULL, `fromUid` INTEGER NOT NULL, `isMine` INTEGER NOT NULL)")
+    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_im_message_uid_peerUid_msgId` ON `im_message` (`uid`, `peerUid`, `msgId`)")
+}
+
 private val MIGRATION_39_40 = Migration(39, 40) { db ->
     db.execSQL("CREATE TABLE IF NOT EXISTS `draft_new` (`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `hash` TEXT NOT NULL, `content` TEXT NOT NULL)")
     db.execSQL("INSERT OR REPLACE INTO `draft_new` (`id`, `hash`, `content`) SELECT `id`, `hash`, `content` FROM `draft` WHERE `id` IN (SELECT MAX(`id`) FROM `draft` GROUP BY `hash`)")
@@ -75,7 +83,7 @@ object DatabaseModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "tblite.db")
-            .addMigrations(MIGRATION_38_39, MIGRATION_39_40, MIGRATION_40_41)
+            .addMigrations(MIGRATION_38_39, MIGRATION_39_40, MIGRATION_40_41, MIGRATION_41_42)
             .build()
     }
 

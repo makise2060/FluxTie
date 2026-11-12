@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package tieba.im;
+
+option java_package = "com.huanchengfly.tieba.post.api.models.protos.im";
+
+// IM 长连接通用类型。字段号取自官方客户端实测（参考 aiotieba v4.8.1），
+// 只保留私信（一期）需要的字段，proto3 允许服务端返回的多余字段被忽略。
+message ImError {
+    int64 errorno = 1;
+    string errmsg = 2;
+}
+
+message ImUserInfo {
+    int64 userId = 1;
+    string userName = 2;
+    string portrait = 4;
+}

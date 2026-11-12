@@ -7,6 +7,8 @@ import com.huanchengfly.tieba.post.models.database.Account
 import com.huanchengfly.tieba.post.models.database.Block
 import com.huanchengfly.tieba.post.models.database.Draft
 import com.huanchengfly.tieba.post.models.database.History
+import com.huanchengfly.tieba.post.models.database.ImMessage
+import com.huanchengfly.tieba.post.models.database.ImSession
 import com.huanchengfly.tieba.post.models.database.MemeEmoticon
 import com.huanchengfly.tieba.post.models.database.SearchHistory
 import com.huanchengfly.tieba.post.models.database.SearchPostHistory
@@ -124,4 +126,29 @@ object DatabaseUtil {
 
     suspend fun replaceMemeEmoticons(uid: String, items: List<MemeEmoticon>) =
         appDatabase.memeEmoticonDao().replaceAll(uid, items)
+
+    // ── IM 私信 ─────────────────────────────────────────────────
+    fun getImSessionFlow(uid: String): Flow<List<ImSession>> =
+        appDatabase.imSessionDao().getFlowByUid(uid)
+
+    fun getImUnreadCountFlow(uid: String): Flow<Int?> =
+        appDatabase.imSessionDao().getUnreadCountFlow(uid)
+
+    fun getImMessageFlow(uid: String, peerUid: Long): Flow<List<ImMessage>> =
+        appDatabase.imMessageDao().getFlowByPeer(uid, peerUid)
+
+    suspend fun getImSession(uid: String, peerUid: Long): ImSession? =
+        appDatabase.imSessionDao().getByPeerUid(uid, peerUid)
+
+    suspend fun upsertImSession(session: ImSession) =
+        appDatabase.imSessionDao().upsert(session)
+
+    suspend fun clearImUnread(uid: String, peerUid: Long) =
+        appDatabase.imSessionDao().clearUnread(uid, peerUid)
+
+    suspend fun insertImMessages(messages: List<ImMessage>): List<Long> =
+        appDatabase.imMessageDao().insertAll(messages)
+
+    suspend fun getLatestImMessage(uid: String, peerUid: Long): ImMessage? =
+        appDatabase.imMessageDao().getLatestByPeer(uid, peerUid)
 }

@@ -52,6 +52,7 @@ import com.huanchengfly.tieba.post.utils.ClientUtils
 import com.huanchengfly.tieba.post.utils.DEFAULT_SEED_COLOR
 import com.huanchengfly.tieba.post.utils.EmoticonManager
 import com.huanchengfly.tieba.post.utils.SharedPreferencesUtil
+import com.huanchengfly.tieba.post.utils.StartupMetrics
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.Util
 import com.huanchengfly.tieba.post.utils.appPreferences
@@ -91,6 +92,7 @@ class App : Application(), SketchFactory {
     override fun onCreate() {
         INSTANCE = this
         super.onCreate()
+        StartupMetrics.mark("application_created")
         ClientUtils.init(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             setWebViewPath(this)

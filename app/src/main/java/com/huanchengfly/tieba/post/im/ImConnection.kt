@@ -61,6 +61,9 @@ class ImConnection(
 
     private val reqIdCounter = AtomicLong(System.currentTimeMillis() / 1000)
 
+    /** 每次 connect 分配连接代次，旧 WebSocket 的迟到回调不得污染新会话 */
+    private val generation = java.util.concurrent.atomic.AtomicInteger(0)
+
     /** 会话 AES 密钥（鉴权成功后设置） */
     @Volatile
     var aesKey: ByteArray? = null
@@ -108,26 +111,35 @@ class ImConnection(
             .build()
 
         val deferred = CompletableDeferred<Unit>()
+        val sessionGeneration = generation.incrementAndGet()
         webSocket = client.newWebSocket(
             request,
             object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
-                    deferred.complete(Unit)
+                    if (generation.get() == sessionGeneration) {
+                        deferred.complete(Unit)
+                    }
                 }
 
                 override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                    incoming.trySend(bytes.toByteArray())
+                    if (generation.get() == sessionGeneration) {
+                        incoming.trySend(bytes.toByteArray())
+                    }
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                     val error = RuntimeException("连接关闭：$code $reason")
-                    deferred.completeExceptionally(error)
-                    onDisconnected(error)
+                    if (generation.get() == sessionGeneration) {
+                        deferred.completeExceptionally(error)
+                        onDisconnected(error, sessionGeneration)
+                    }
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    deferred.completeExceptionally(t)
-                    onDisconnected(t)
+                    if (generation.get() == sessionGeneration) {
+                        deferred.completeExceptionally(t)
+                        onDisconnected(t, sessionGeneration)
+                    }
                 }
             },
         )
@@ -139,9 +151,9 @@ class ImConnection(
         }
     }
 
-    private fun onDisconnected(t: Throwable) {
-        // 只处理当前连接：close() 主动断开后旧 listener 的迟到回调不应覆盖新状态
-        if (_state.value == ImConnectionState.Idle) return
+    private fun onDisconnected(t: Throwable, sessionGeneration: Int) {
+        // 代次不匹配说明该事件属于旧连接，不覆盖当前状态
+        if (generation.get() != sessionGeneration || _state.value == ImConnectionState.Idle) return
         _state.value = ImConnectionState.Failed(t)
         sessionEnd.complete(Unit)
         // 唤醒所有等待者
@@ -196,7 +208,8 @@ class ImConnection(
     }
 
     fun close() {
-        // 先置 Idle：主动断开后旧 listener 的迟到回调不再改写状态
+        // 先递增代次并置 Idle：旧 listener 的迟到回调不再影响新连接
+        generation.incrementAndGet()
         _state.value = ImConnectionState.Idle
         webSocket?.close(1000, null)
         webSocket = null

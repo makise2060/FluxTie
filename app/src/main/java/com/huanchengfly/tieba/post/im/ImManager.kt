@@ -1,6 +1,7 @@
 package com.huanchengfly.tieba.post.im
 
 import android.util.Log
+import com.huanchengfly.tieba.post.App
 import com.huanchengfly.tieba.post.arch.GlobalEvent
 import com.huanchengfly.tieba.post.arch.GlobalEventFlow
 import com.huanchengfly.tieba.post.models.database.Account
@@ -16,11 +17,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -47,6 +50,7 @@ object ImManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val connection = ImConnection(scope)
+    private val networkStatus by lazy { NetworkStatus(App.INSTANCE) }
 
     private val _imStatus = MutableStateFlow<ImStatus>(ImStatus.Idle)
     val imStatus: StateFlow<ImStatus> = _imStatus.asStateFlow()
@@ -70,9 +74,24 @@ object ImManager {
 
     private var accountEventJob: Job? = null
 
+    private var networkEventJob: Job? = null
+
     /** App 启动钩子：有登录态则启动（幂等），并跟随切号/退出重启或停止连接 */
     fun onAppStart() {
         AccountUtil.getLoginInfo()?.let { start(it) }
+        if (networkEventJob?.isActive != true) {
+            networkEventJob = scope.launch {
+                var wasOnline = networkStatus.online.value
+                networkStatus.online.collect { online ->
+                    if (online && !wasOnline && accountUid.isNotEmpty()) {
+                        // 网络恢复主动打断旧会话，让保活循环立即重连，而不是等退避结束
+                        Log.i(TAG, "网络恢复，立即重连 IM")
+                        connection.close()
+                    }
+                    wasOnline = online
+                }
+            }
+        }
         if (accountEventJob?.isActive != true) {
             accountEventJob = scope.launch {
                 GlobalEventFlow.filterIsInstance<GlobalEvent.AccountSwitched>().collect {
@@ -97,9 +116,12 @@ object ImManager {
         monitorJob = scope.launch { monitorLoop(account) }
     }
 
+    /** 主动停止：同时断开旧连接，唤醒可能正在等待网络恢复的保活循环 */
     fun stop() {
         monitorJob?.cancel()
         monitorJob = null
+        accountUid = ""
+        myUid = 0L
         connection.close()
         privGid = 0L
         gid2LastMsgId.clear()
@@ -111,8 +133,13 @@ object ImManager {
      */
     private suspend fun monitorLoop(account: Account) {
         var backoff = ImConstants.RECONNECT_BASE_DELAY_MS
-        while (scope.isActive) {
+        while (currentCoroutineContext().isActive) {
             try {
+                if (!networkStatus.online.value) {
+                    _imStatus.value = ImStatus.Idle
+                    // 离线时不重试握手，等待 NetworkCallback 恢复信号
+                    networkStatus.online.first { it }
+                }
                 _imStatus.value = ImStatus.Connecting
                 connection.connect()
                 auth(account)

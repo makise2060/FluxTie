@@ -119,6 +119,7 @@ import com.huanchengfly.tieba.post.utils.JobServiceUtil
 import com.huanchengfly.tieba.post.utils.PermissionUtils
 import com.huanchengfly.tieba.post.utils.PickMediasRequest
 import com.huanchengfly.tieba.post.utils.QuickPreviewUtil
+import com.huanchengfly.tieba.post.utils.StartupMetrics
 import com.huanchengfly.tieba.post.utils.ThemeUtil
 import com.huanchengfly.tieba.post.utils.TiebaUtil
 import com.huanchengfly.tieba.post.utils.compose.LaunchActivityForResult
@@ -438,6 +439,7 @@ class MainActivityV2 : BaseComposeActivity() {
                 .start()
         }
         super.onCreate(savedInstanceState)
+        StartupMetrics.mark("activity_created")
         window.decorView.setBackgroundColor(0)
         window.setBackgroundDrawable(ColorDrawable(0))
         launch {

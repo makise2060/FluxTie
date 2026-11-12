@@ -74,6 +74,11 @@ android {
         }
         manifestPlaceholders["is_self_build"] = "$isSelfBuild"
     }
+    lint {
+        // 存量问题固定为基线；PR 检查只拦截新增 lint 问题
+        baseline = file("lint-baseline.xml")
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true

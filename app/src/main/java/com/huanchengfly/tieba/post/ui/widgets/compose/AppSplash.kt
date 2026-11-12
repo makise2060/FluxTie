@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.anim.MotionTokens
+import com.huanchengfly.tieba.post.utils.StartupMetrics
 import com.huanchengfly.tieba.post.utils.appPreferences
 import androidx.core.graphics.drawable.toBitmap
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -87,6 +88,7 @@ object SplashState {
     val finished = MutableStateFlow(false)
 
     fun markReady() {
+        StartupMetrics.mark("splash_ready")
         ready.value = true
     }
 

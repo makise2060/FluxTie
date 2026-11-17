@@ -24,6 +24,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.page.settings.components.settingsListContentPadding
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.page.destinations.LoginPageDestination
 import com.huanchengfly.tieba.post.ui.page.settings.components.AppearanceCard
@@ -72,7 +73,7 @@ fun AccountManagePage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = settingsListContentPadding()
         ) {
             // ── 账号操作
             item {

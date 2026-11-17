@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.page.settings.components.settingsListContentPadding
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.page.destinations.BlockListPageDestination
 import com.huanchengfly.tieba.post.ui.page.settings.components.AppearanceCard
@@ -55,7 +56,7 @@ fun BlockSettingsPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = settingsListContentPadding()
         ) {
             item {
                 SectionLabel(

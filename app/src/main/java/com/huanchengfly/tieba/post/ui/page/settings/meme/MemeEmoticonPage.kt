@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.panpf.sketch.compose.AsyncImage
+import com.huanchengfly.tieba.post.ui.page.settings.components.settingsListContentPadding
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.collectPartialAsState
 import com.huanchengfly.tieba.post.arch.pageViewModel
@@ -225,7 +226,7 @@ fun MemeEmoticonPage(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 8.dp),
-                            contentPadding = PaddingValues(vertical = 8.dp),
+                            contentPadding = settingsListContentPadding(),
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {

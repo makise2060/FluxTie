@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -405,6 +406,8 @@ fun Dialog(
                         0.6f
                     }
                 )
+                // 底部弹层贴屏幕底，导航栏区域需自行避让，否则三键导航下按钮被压住（issue #41）
+                .navigationBarsPadding()
                 .padding(16.dp)
                 .background(
                     color = ExtendedTheme.colors.windowBackground,

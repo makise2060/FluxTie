@@ -59,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.intPreferencesKey
+import com.huanchengfly.tieba.post.ui.page.settings.components.settingsListContentPadding
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.rememberPreferenceAsMutableState
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
@@ -121,7 +122,7 @@ fun HabitSettingsPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = settingsListContentPadding()
         ) {
             // ── 图片与媒体
             item(key = "image_label") {

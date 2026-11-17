@@ -14,15 +14,15 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.huanchengfly.tieba.post.R
 
 /** 空态插画口径：内置三套 Lottie，新增空态从中取用，不再各自拼装。 */
-enum class EmptyIllustration(val rawRes: Int, val aspectRatio: Float) {
-    /** 宇航员漂浮（首页未登录等「大空态」）。 */
+enum class EmptyIllustration(val rawRes: Int, val aspectRatio: Float, val defaultSpeed: Float = 1f) {
+    /** 宇航员漂浮（首页未登录等「大空态」），本身 6s 长循环，原速即可。 */
     Astronaut(R.raw.lottie_astronaut, 2f),
 
     /** 空纸箱（列表无数据）。 */
     Box(R.raw.lottie_empty_box, 2f),
 
-    /** 遮罩（内容被隐藏/屏蔽）。 */
-    Hide(R.raw.lottie_hide, 2.5f),
+    /** 遮罩（内容被隐藏/屏蔽）：原速 3s 循环内动作段过快，观感生硬，整体放慢。 */
+    Hide(R.raw.lottie_hide, 2.5f, defaultSpeed = 0.7f),
 }
 
 /**
@@ -50,6 +50,7 @@ fun EmptyState(
             LottieAnimation(
                 composition = composition,
                 iterations = LottieConstants.IterateForever,
+                speed = illustration.defaultSpeed,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(illustration.aspectRatio)

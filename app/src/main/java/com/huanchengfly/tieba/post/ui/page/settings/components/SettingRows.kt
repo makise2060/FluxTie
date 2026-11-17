@@ -1,7 +1,11 @@
 package com.huanchengfly.tieba.post.ui.page.settings.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
@@ -32,6 +36,17 @@ import com.huanchengfly.tieba.post.ui.widgets.compose.rememberDialogState
 import com.huanchengfly.tieba.post.ui.widgets.compose.picker.ListSinglePicker
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.map
+
+/**
+ * 设置页列表统一的 contentPadding：M2 Scaffold 在本项目的 edge-to-edge 配置下
+ * 不下发系统栏 insets（issue #41），底部需自行拼上导航栏 inset，
+ * 避免三键导航设备上末行与虚拟按键重合。
+ */
+@Composable
+internal fun settingsListContentPadding(): PaddingValues = PaddingValues(
+    top = 8.dp,
+    bottom = 8.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+)
 
 /**
  * 卡片式设置行组件补充：

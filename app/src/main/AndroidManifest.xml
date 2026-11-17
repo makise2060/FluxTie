@@ -356,6 +356,15 @@
 
         <receiver android:name=".receivers.AutoSignAlarm" />
 
+        <!-- 外部自动化触发签到入口（macrodroid/Tasker）：幂等守卫见 SignTriggerReceiver -->
+        <receiver
+            android:name=".receivers.SignTriggerReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.makise.fluxtie.action.TRIGGER_SIGN" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.share.FileProvider"

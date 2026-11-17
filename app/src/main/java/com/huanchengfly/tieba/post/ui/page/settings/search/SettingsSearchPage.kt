@@ -42,6 +42,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.huanchengfly.tieba.post.ui.page.settings.components.settingsListContentPadding
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.ui.common.theme.compose.ExtendedTheme
 import com.huanchengfly.tieba.post.ui.widgets.compose.BackNavigationIcon
@@ -111,7 +112,7 @@ fun SettingsSearchPage(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(contentPadding),
-                contentPadding = PaddingValues(vertical = 8.dp),
+                contentPadding = settingsListContentPadding(),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 items(

@@ -81,6 +81,7 @@ import androidx.compose.material.icons.rounded.Animation
 import androidx.compose.material.icons.rounded.Forum
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material.icons.rounded.ViewCompact
+import com.huanchengfly.tieba.post.ui.page.settings.components.settingsListContentPadding
 import com.huanchengfly.tieba.post.App
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamicColorScheme
@@ -256,7 +257,7 @@ fun CustomSettingsPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = settingsListContentPadding()
         ) {
             // ── 主题模式
             item(key = "theme_mode_label") {

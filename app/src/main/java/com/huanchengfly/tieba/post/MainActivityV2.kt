@@ -620,7 +620,9 @@ class MainActivityV2 : BaseComposeActivity() {
 
                 // 预测性返回开关:关闭时以高优先级回调接管返回,直接执行导航弹栈
                 // (无手势预览),系统级 predictive back 预览由 manifest 的
-                // enableOnBackInvokedCallback + navigation 库在开关开启时生效
+                // enableOnBackInvokedCallback + navigation 库在开关开启时生效。
+                // 回调只在导航栈可弹时启用：栈底时放行系统返回，否则侧滑/返回键
+                // 会被这里的空 navigateUp() 吃掉，无法退出应用（issue #43）
                 val predictiveBack by rememberPreferenceAsState(
                     key = booleanPreferencesKey("predictive_back"),
                     defaultValue = true
@@ -628,11 +630,15 @@ class MainActivityV2 : BaseComposeActivity() {
                 if (!predictiveBack) {
                     val backDispatcher = LocalOnBackPressedDispatcherOwner.current
                     val backCallback = remember(navController) {
-                        object : OnBackPressedCallback(true) {
+                        object : OnBackPressedCallback(false) {
                             override fun handleOnBackPressed() {
                                 navController.navigateUp()
                             }
                         }
+                    }
+                    val isAtRoot = currentDestination?.route == NavGraphs.root.startRoute.route
+                    SideEffect {
+                        backCallback.isEnabled = !isAtRoot
                     }
                     DisposableEffect(backDispatcher) {
                         backDispatcher?.onBackPressedDispatcher?.addCallback(

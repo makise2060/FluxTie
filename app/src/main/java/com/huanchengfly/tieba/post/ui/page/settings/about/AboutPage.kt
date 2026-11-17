@@ -67,6 +67,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import com.huanchengfly.tieba.post.ui.page.settings.components.settingsListContentPadding
 import com.huanchengfly.tieba.post.BuildConfig
 import com.huanchengfly.tieba.post.R
 import com.huanchengfly.tieba.post.arch.hiltViewModel
@@ -182,7 +183,7 @@ fun AboutPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(vertical = 8.dp),
+            contentPadding = settingsListContentPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // ── 头部：logo + 名称 + 版本（连点 7 次触发彩蛋庆祝：纸屑 + logo 弹跳旋转 + 气泡）

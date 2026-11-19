@@ -396,7 +396,7 @@ fun BottomNavigation(
     themeColors: ExtendedColors = ExtendedTheme.colors
 ) {
     Column(modifier = Modifier.navigationBarsPadding()) {
-        BottomNavigationDivider(themeColors)
+        // 贴底底栏不再加分隔线：底栏自身底色与内容区已有对比，那根 1.5dp 线观感突兀
         BottomNavigation(
             backgroundColor = themeColors.bottomBar,
             elevation = 0.dp,

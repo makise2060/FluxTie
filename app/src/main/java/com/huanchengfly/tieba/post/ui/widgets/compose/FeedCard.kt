@@ -193,7 +193,9 @@ private fun UserHeader(
             )
         },
         content = content,
-        modifier = modifier
+        modifier = modifier,
+        // 信息流用户名不重要的信息不抢眼：去粗缩小一号（issue #44）
+        nameTextStyle = TextStyle(fontWeight = FontWeight.Normal, fontSize = 12.sp)
     )
 }
 
@@ -241,7 +243,9 @@ fun UserHeader(
             )
         }).takeIf { time != null },
         content = content,
-        modifier = modifier
+        modifier = modifier,
+        // 信息流用户名去粗缩小一号（issue #44）
+        nameTextStyle = TextStyle(fontWeight = FontWeight.Normal, fontSize = 12.sp)
     )
 }
 

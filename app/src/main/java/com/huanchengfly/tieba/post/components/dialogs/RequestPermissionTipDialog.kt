@@ -42,7 +42,9 @@ class RequestPermissionTipDialog(context: Context, permission: PermissionUtils.P
         setButton(
             BUTTON_NEGATIVE,
             context.getString(R.string.button_cancel),
-            android.content.DialogInterface.OnClickListener { _, _ -> }
+            // 必须走 cancel() 让 OnCancelListener 触发 onCancel 回调写「已拒绝」标记；
+            // 空实现只 dismiss，标记永远写不进去，用户每次启动都会再看到弹窗（issue #44）
+            android.content.DialogInterface.OnClickListener { dialog, _ -> dialog.cancel() }
         )
     }
 

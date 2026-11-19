@@ -64,6 +64,11 @@ fun UserHeader(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     desc: @Composable (() -> Unit)? = null,
+    /**
+     * 调用方可进一步覆盖用户名样式（如信息流卡片去粗缩小，issue #44），不影响其他页面。
+     * 必须排在 [content] 之前：content 需保持末位以支持尾随 lambda 传参。
+     */
+    nameTextStyle: TextStyle? = null,
     content: @Composable (RowScope.() -> Unit)? = null,
 ) {
     val clickableModifier = if (onClick != null) {
@@ -94,7 +99,7 @@ fun UserHeader(
                         color = ExtendedTheme.colors.text,
                         fontSize = 13.sp
                     )
-                )
+                ).merge(nameTextStyle)
             ) {
                 name()
             }
